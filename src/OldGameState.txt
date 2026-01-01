@@ -1,0 +1,294 @@
+// // #include "Utils.h"
+// // #include "GameState.h"
+// // #include <algorithm>
+// // #include <stdexcept>
+// // #include <memory>
+// // using namespace std;
+
+// // //SOME DETAILS REGARDING THIS IMPLEMENTATION:
+// // //FOR STREETS::
+// // // 0: Deal hole cards   
+// // // 1: Preflop betting   
+// // // 2: Deal flop         
+// // // 3: Flop betting      
+// // // 4: Deal turn         
+// // // 5: Turn betting      
+// // // 6: Deal river        
+// // // 7: River betting  
+// // //For actions: I stoer them as a Action
+// // //with action = (type, action_amount)
+// // //For type: fold = 0, check = 1, call = 2, raise = 3
+
+
+// // void GameState::start_game(mt19937& rng,
+// //                               array<int, 5>& board,
+// //                               array<int, 4>& hands) {
+
+  
+// //     static array<int, 52> deck = []{
+// //          array<int, 52> a{};
+// //         for (int i = 0; i < 52; ++i)a[i] = i;
+// //         return a;}();
+
+// //     for (int i = 0; i < 9; ++i) {
+// //         std::uniform_int_distribution<int> dist(i, 51);
+// //         int j = dist(rng);
+// //         swap(deck[i], deck[j]);
+// //     }
+
+// //     for (int i = 0; i < 5; ++i) board[i] = deck[i];
+// //     for (int i = 0; i < 4; ++i) hands[i] = deck[5 + i];
+// // }
+
+// // GameState::GameState(array<int, 5>& cur_board_ref, array<int, 4>& cur_hands_ref):
+// //     board_ref(cur_board_ref), hands_ref(cur_hands_ref),                 
+// //     stacks({starting_stack,starting_stack}),
+// //     pips({0,0}),
+// //     pot(0),
+// //     street(0),
+// //     active_player(0){}
+
+// // GameState::GameState(array<int, 5>& cur_board_ref,
+// //                                 array<int, 4>& cur_hands_ref,
+// //                                  array<int, 2> cur_stacks,
+// //                                  array<int, 2> cur_pips,
+// //                                  int cur_pot,
+// //                                  int cur_street,
+// //                                  int cur_active_player,
+// //                                  vector<Action> cur_history,
+// //                                  Action cur_last_action):
+// //     board_ref(cur_board_ref),
+// //     hands_ref(cur_hands_ref),                 
+// //     stacks(cur_stacks),
+// //     pips(cur_pips),
+// //     pot(cur_pot),
+// //     street(cur_street),
+// //     active_player(cur_active_player),
+// //     action_history(std::move(cur_history)),
+// //     last_action(cur_last_action){}
+
+
+// // bool GameState::is_legal_action(const Action& action) const {
+// //     if (street%2 == 0){
+// //         return false; 
+// //     }
+
+// //     if (action.type < 0 || action.type > 3){
+// //         return false;
+// //     }
+  
+// //     bool facing_bet = (pips[active_player] < pips[1-active_player]);
+// //     int to_call = pips[1-active_player] - pips[active_player];
+// //     int min_raise_to = max(2, pips[1-active_player] + to_call);
+// //     int max_raise_to = min(pips[0] + stacks[0], pips[1] + stacks[1]);
+
+// //     if (action.type == 3) {
+// //         return (action.amt >= min_raise_to) && (action.amt <= max_raise_to);
+// //     }
+
+// //     if (action.type == 0 || action.type == 2)  return facing_bet || action.amt == 0; //FOLD 
+// //     if (action.type == 1) return !facing_bet || action.amt == 0; //CHECK
+
+// //     return false;
+// // }
+
+// // bool GameState::is_terminal() const {
+// //     if (street == 8) return true;
+// //     return false;
+// // }
+
+// // bool GameState::is_chance_node() const {
+// //     return (street%2 == 0 && street != 8);
+// // }
+
+// // int GameState::get_active_player() const {
+// //     return active_player;
+// // }
+
+// // int GameState::get_pot() const {
+// //     return pot;
+// // }
+
+// // const vector<Action>& GameState::get_action_history() const {
+// //     return action_history;
+// // }
+
+// // array<int, 2> GameState::get_hand(int player) const {
+
+// //     if (player != 0 && player!= 1){
+// //         throw logic_error("The player index must be one of 1 or 0");
+// //     }
+
+// //     array<int,2> output;
+// //     output[0] = hands_ref[2*player];
+// //     output[1] = hands_ref[2*player+1];
+
+// //     return output;
+// // }
+
+// // array<int,5> GameState::get_board() const {
+// //     //-1 means a card you cant see yet,, 
+// //     int n = 0;
+// //     if (street < 2) { n = 0;} 
+// //     else if (street < 4) {n = 3;} 
+// //     else if (street < 6) {n = 4;}
+// //     else {n = 5;}
+    
+// //     array<int, 5> output;
+// //     output.fill(-1);
+
+// //     for (int i = 0; i < n; i++){
+// //         output[i]= board_ref[i];
+// //     }
+
+// //     return output;
+// // }
+
+// // unique_ptr<GameState> GameState::next_game_state(const Action& action) const {
+
+// //     if (street % 2 == 0 || street >= 8) {
+// //         throw logic_error("Not a valid street to do an action on"); // terminal (8) or chance node (0,2,4,6)
+// //     }
+
+// //     array<int, 2> new_stacks = stacks;
+// //     array<int, 2> new_pips = pips;
+// //     int new_pot = pot;
+// //     int new_street = street;
+// //     int new_active_player = 1 - active_player;
+
+// //     vector<Action> new_history = action_history;
+// //     new_history.push_back(action);
+// //     Action new_last_action = action;
+
+// //     int to_pay = 0;
+// //     if (action.type == 2) { to_pay = pips[1 - active_player] - pips[active_player];}
+// //     else if (action.type == 3) { to_pay = action.amt - pips[active_player];}
+
+// //     new_pips[active_player] += to_pay;
+// //     new_stacks[active_player] -= to_pay;
+// //     new_pot += to_pay;
+
+// //     bool round_ended = false;
+
+// //     if (last_action.type != -1) {
+// //         int a = last_action.type;
+// //         int b = action.type;
+// //         round_ended = (a == 1 && b == 1) || (a == 3 && b == 2);
+// //     }
+
+// //     if (round_ended || last_action.type == 0) {
+// //         new_pips = {0, 0};
+// //         new_active_player = 0;
+// //         new_last_action = {-1, -1};
+// //         new_street += 1;
+// //     }
+
+// //     if (last_action.type == 0) {new_street = 8;}
+
+// //     return make_unique<GameState>(
+// //         board_ref, hands_ref,
+// //         new_stacks, new_pips,
+// //         new_pot, new_street,
+// //         new_active_player,
+// //         std::move(new_history),
+// //         new_last_action);
+// // }
+
+// // unique_ptr<GameState> GameState::sample_chance_node(mt19937& rng) const {
+// //     if (!is_chance_node()) {
+// //         throw logic_error("sample_chance_node called when not at a chance node");
+// //     }
+
+// //     array<int, 2> new_stacks = stacks;
+// //     array<int, 2> new_pips = {0,0};
+// //     int new_pot = pot;
+// //     int new_street = street + 1;
+// //     int new_active_player = 0;
+
+// //     vector<Action> new_history = action_history;
+// //     Action new_last_action{-1, -1};
+
+// //     if (street == 0) {
+// //         start_game(rng, board_ref, hands_ref);
+// //     }
+
+// //     return make_unique<GameState>(
+// //         board_ref, hands_ref, new_stacks, new_pips,
+// //         new_pot, new_street, new_active_player,
+// //         std::move(new_history),
+// //         new_last_action);
+// // }
+
+// // double GameState::get_rewards(int player) const {
+
+// //     if (!is_terminal()) throw logic_error("Cannot assign rewards from non-terminal state");
+// //     if (player != 0 && player != 1) throw logic_error("player must be 0 or 1");
+
+// //     double win_share = 0.0;
+
+// //     if (last_action.type == 0) {
+// //         if (player == active_player) win_share = 1.0;
+// //     }
+
+// //     else {
+// //         array<uint8_t, 7> player_ranks, player_suits, opp_ranks, opp_suits;
+
+// //         for (int i = 0; i < 5; i++) {
+
+// //             uint8_t suit = static_cast<uint8_t>(board_ref[i]%4);
+// //             uint8_t rank = static_cast<uint8_t>(board_ref[i]/12);
+
+// //             player_ranks[i] = rank;
+// //             opp_ranks[i] = rank;
+
+// //             player_suits[i] = suit;
+// //             opp_suits[i] = suit;
+// //         }
+
+// //         for (int i = 0; i < 2; i++) {
+
+// //             player_suits[5 + i] =  static_cast<uint8_t>(hands_ref[2*player + i] % 4);
+// //             player_ranks[5 + i] = static_cast<uint8_t>(hands_ref[2*player + i] / 12);
+
+// //             opp_suits[5 + i] = static_cast<uint8_t>(hands_ref[2*(1-player) + i] % 4);
+// //             opp_ranks[5 + i] = static_cast<uint8_t>(hands_ref[2*(1-player) + i] / 12);
+// //         }
+        
+// //         uint32_t player_score = evaluate_raw(player_ranks.data(), player_suits.data(), 7);
+// //         uint32_t opp_score = evaluate_raw(opp_ranks.data(), opp_suits.data(), 7);
+
+// //         if (player_score > opp_score) win_share = 1.0;
+// //         else if (player_score == opp_score) win_share = 0.5;
+// //     }
+
+// //     return stacks[player] - starting_stack + win_share * static_cast<double>(pot) ;
+// // }
+
+// //this needs to be redone at some point
+// string GameState::get_ID(int player) const {
+//     string output;
+//     return output;
+
+//     // //hands array is like p0, p0, p1, p1
+
+//     // for (int val : hands_ref) {
+//     //     output += to_string(val);
+//     //     output += ",";
+//     // }
+
+//     // for (int val : board_ref) {
+//     //     if (val == -1) break;       
+//     //     output += to_string(val);
+//     //     output += ",";
+//     // }
+
+//     // for (const Action& action : action_history) {
+//     //     if (action.type == 0) output += "F";
+//     //     else if (action.type == 1) output += "X";
+//     //     else if (action.type == 2) output += "C";
+//     //     else if (action.type == 3) { output += "R"; output += to_string(action.amt); }
+//     // }
+
+//     // output.shrink_to_fit(); 
+//     // return output;
+// }
