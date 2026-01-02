@@ -1,23 +1,22 @@
 
-    #pragma once
+#pragma once
 
-    #include <random>
-    #include <string>
-    #include <unordered_map>
-    #include <vector>
-    #include <array>
-    #include <memory>
+#include <random>
+#include <string>
+#include <vector>
+#include <array>
+#include <memory>
 
-    #include "GameState.h"
-    #include "InfoSet.h"
-    #include "InfoKey.h"
+#include "GameState.h"
+#include "InfoSet.h"
+#include "InfoKey.h"
+#include "ankerl/unordered_dense.h"
 
-    using std::mt19937;
-    using std::string;
-    using std::unordered_map;
-    using std::vector;
-    using std::array;
-    using std::unique_ptr;
+using std::mt19937;
+using std::string;
+using std::vector;
+using std::array;
+using std::unique_ptr;
 
 
 class CFR {
@@ -26,13 +25,13 @@ class CFR {
 
         unique_ptr<GameState> init_state;
 
-        array<unordered_map<InfoKey, InfoSet, InfoKeyHash>,2> infoset_dict;
+        array<ankerl::unordered_dense::map<InfoKey, std::shared_ptr<InfoSet>, InfoKeyHash>,2> infoset_dict;
 
         mt19937 rng;
 
         InfoSet& get_InfoSet(int player, const GameState& state);
 
-        double traverse(int player,  const GameState& state, double pi_i, double pi_opp, int t);
+        double traverse(int player, GameState& state, double pi_i, double pi_opp, int t);
 
     public:
     

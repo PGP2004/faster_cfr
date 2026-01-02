@@ -1,7 +1,10 @@
 #include "Utils.h"
 #include "Packings.h"
 #include "GameState.h"
+#include "InfoKey.h"
+#include "Profiler.h"
 #include <algorithm>
+#include <string>
 #include <stdexcept>
 #include <memory>
 
@@ -45,6 +48,7 @@ static int abs_id_from_action(const GameState& st, const Action& a) {
 
 
 void GameState::start_game(mt19937& rng, array<int, 5>& board, array<int, 4>& hands) {
+    PROFILE_FUNCTION();
     static array<int, 52> deck = []{
         array<int, 52> a{};
         for (int i = 0; i < 52; ++i) a[i] = i;
@@ -69,18 +73,9 @@ GameState::GameState(array<int, 5>& cur_board_ref, array<int, 4>& cur_hands_ref)
       pot(0),
       street(0),
       active_player(0),
-      action_history(),
       last_action({-1, -1}),
       packed_actions(),
       packed_cards() {
-
-    // cout << "The length of actions is: " << packed_actions.len << "\n";
-    // cout << "Action History: ";
-    
-    // for (const Action& action : action_history){
-    //     cout << "( " << action.type << " , " << action.amt << packed_actions.len << ")" << "\n";
-    //   }
-    // cout << "\n";
     }
 
 GameState::GameState(array<int, 5>& cur_board_ref,
@@ -90,7 +85,6 @@ GameState::GameState(array<int, 5>& cur_board_ref,
                      int cur_pot,
                      int cur_street,
                      int cur_active_player,
-                     vector<Action> cur_history,
                      Action cur_last_action,
                      PackedActions cur_packed_actions,
                      array<PackedCards, 2> cur_packed_cards)
@@ -101,39 +95,13 @@ GameState::GameState(array<int, 5>& cur_board_ref,
       pot(cur_pot),
       street(cur_street),
       active_player(cur_active_player),
-      action_history(std::move(cur_history)),
       last_action(cur_last_action),
       packed_actions(cur_packed_actions),
       packed_cards(cur_packed_cards) {
-
-    // cout << "The length of packed actions is: " << packed_actions.len << "\n";
-    // cout << "The length of action history is: " << action_history.size() << "\n";
-
-    //     vector<string> action_type_name = {
-    // "FOLD",   // 0
-    // "CHECK",  // 1
-    // "CALL",   // 2
-    // "RAISE"   // 3
-    // };
-
-    // cout << "The final action history is: ";
-
-    // for (const Action& action: action_history){
-    //     cout << "(" << action_type_name[action.type] << ",";
-    //     if (action.type == 3){
-    //         cout << action.amt ;
-    //     }
-    //     cout << ")";
-    // }
-    // cout << "\n";
-    
-    // for (const Action& action : action_history){
-    //     cout << "( " << action.type << " , " << action.amt << ")" << "\n";
-    //   }
-    // cout << "\n";
     }
 
 bool GameState::is_legal_action(const Action& action) const {
+    PROFILE_FUNCTION();
     if (street % 2 == 0) return false;
     if (action.type < 0 || action.type > 3) return false;
 
@@ -154,73 +122,229 @@ bool GameState::is_legal_action(const Action& action) const {
     return false;
 }
 
-bool GameState::is_terminal() const {
+void GameState::add_legal_actions(int my_pip, int p, vector<pair<string, Action>>& abs_and_concrete) const {
+    PROFILE_FUNCTION();
+    if(street % 2 == 0) return;
 
-//     vector<string> action_type_name = {
-//     "FOLD",   // 0
-//     "CHECK",  // 1
-//     "CALL",   // 2
-//     "RAISE"   // 3
-// };
-
-//     cout << "The final action history is: ";
-
-//     for (const Action& action: action_history){
-//         cout << "(" << action_type_name[action.type] << ",";
-//         if (action.type == 3){
-//             cout << action.amt ;
-//         }
-//         cout << ")";
-//     }
-//     cout << "\n";
-
-    return street == 8;
-}
-
-bool GameState::is_chance_node() const {
-    return (street % 2 == 0 && street != 8);
-}
-
-int GameState::get_active_player() const {
-    return active_player;
-}
-
-int GameState::get_pot() const {
-    return pot;
-}
-
-int GameState::get_pip(int player) const {
-    if (player != 0 && player != 1) {
-        throw logic_error("The player index must be one of 1 or 0");
+    bool facing_bet = (pips[active_player] < pips[1 - active_player]);
+    if(facing_bet){
+        abs_and_concrete.push_back({"fold", {0, 0}});
+        abs_and_concrete.push_back({"call", {2, 0}});
+    } else {
+        abs_and_concrete.push_back({"check", {1, 0}});
     }
-    return pips[player];
-}
+    int cur_bet = max(pips[0], pips[1]);
+    int last_raise_size = abs(pips[0] - pips[1]);              
+    int min_raise_to = cur_bet + max(2, last_raise_size);     
+    int max_raise_to = min(pips[0] + stacks[0], pips[1] + stacks[1]);
 
-const vector<Action>& GameState::get_action_history() const {
-    return action_history;
-}
-
-array<int, 2> GameState::get_hand(int player) const {
-    if (player != 0 && player != 1) {
-        throw logic_error("The player index must be one of 1 or 0");
+    int half = p / 2;
+    int full = p;
+    int two  = 2 * p;
+    
+    if(my_pip + half >= min_raise_to && my_pip + half <= max_raise_to){
+        abs_and_concrete.push_back({"half_pot", {3, my_pip + half}});
     }
-    return {hands_ref[2 * player], hands_ref[2 * player + 1]};
+    if(my_pip + full >= min_raise_to && my_pip + full <= max_raise_to){
+        abs_and_concrete.push_back({"full_pot", {3, my_pip + full}});
+    }
+    if(my_pip + two >= min_raise_to && my_pip + two <= max_raise_to){
+        abs_and_concrete.push_back({"2x_pot", {3, my_pip + two}});
+    }
+
+    // vector<pair<string, Action>> candidates = {
+    //     {"fold",     {0, 0}},
+    //     {"check",    {1, 0}},
+    //     {"call",     {2, 0}},
+    //     {"half_pot", {3, my_pip + half}},
+    //     {"full_pot", {3, my_pip + full}},
+    //     {"2x_pot",   {3, my_pip + two}},
+    // };
+
+    // for (auto &na : candidates) {
+    //     if (state.is_legal_action(na.second)) abs_and_concrete.push_back(na);
+    // }
 }
 
-array<int, 5> GameState::get_board() const {
-    int n = 0;
-    if (street < 2) n = 0;
-    else if (street < 4) n = 3;
-    else if (street < 6) n = 4;
-    else n = 5;
+// Inline functions moved to header for performance
 
-    array<int, 5> output;
-    output.fill(-1);
-    for (int i = 0; i < n; i++) output[i] = board_ref[i];
-    return output;
+ActionUndo GameState::apply_action(const Action& action) {
+    PROFILE_FUNCTION();
+    
+    // Save undo information
+    ActionUndo undo;
+    undo.old_last_action = last_action;
+    undo.old_pips = pips;
+    undo.old_street = street;
+    undo.acting_player = active_player;  // Save who is acting
+    
+    // Calculate abstract action ID BEFORE modifying state
+    undo.abs_id = abs_id_from_action(*this, action);
+    
+    // Calculate payment
+    int to_pay = 0;
+    if (action.type == 2) {  // Call
+        to_pay = pips[1 - active_player] - pips[active_player];
+    } else if (action.type == 3) {  // Raise
+        to_pay = action.amt - pips[active_player];
+    }
+    undo.to_pay = to_pay;
+    
+    // Apply payment
+    pips[active_player] += to_pay;
+    stacks[active_player] -= to_pay;
+    pot += to_pay;
+    
+    // Update packed actions
+    packed_actions.push(undo.abs_id);
+    
+    // Check if round ended
+    bool round_ended = false;
+    if (last_action.type == 0) {
+        round_ended = true;
+    } else if (last_action.type != -1) {
+        int a = last_action.type;
+        int b = action.type;
+        round_ended = (a == 1 && b == 1) || (a == 3 && b == 2);
+    }
+    undo.round_ended = round_ended;
+    
+    // Apply state changes
+    if (action.type == 0) {  // Fold ends game
+        street = 8;
+        active_player = 1 - active_player;
+    } else if (round_ended) {
+        pips = {0, 0};
+        active_player = 0;
+        last_action = {-1, -1};
+        street += 1;
+    } else {
+        active_player = 1 - active_player;
+        last_action = action;
+    }
+    
+    return undo;
+}
+
+void GameState::undo_action(const ActionUndo& undo_info, const Action& action) {
+    PROFILE_FUNCTION();
+    
+    // Restore street (handles fold case where street jumped to 8)
+    street = undo_info.old_street;
+    
+    // Reverse payment (do this BEFORE changing active_player)
+    stacks[undo_info.acting_player] += undo_info.to_pay;
+    pot -= undo_info.to_pay;
+    
+    // Reverse state changes based on what happened
+    if (undo_info.round_ended) {
+        // Round had ended, we were at street+1, player 0
+        active_player = undo_info.acting_player;
+    } else {
+        // Normal action, just flip player
+        active_player = 1 - active_player;
+    }
+    
+    // Restore pips (handles both normal and round-end cases)
+    pips = undo_info.old_pips;
+    
+    // Restore last action
+    last_action = undo_info.old_last_action;
+    
+    // Reverse packed actions
+    packed_actions.len--;
+}
+
+ChanceUndo GameState::apply_chance(std::mt19937& rng) {
+    PROFILE_FUNCTION();
+    
+    // Save undo information
+    ChanceUndo undo;
+    undo.old_stacks = stacks;
+    undo.old_pips = pips;
+    undo.old_pot = pot;
+    
+    // Save cards that will be overwritten
+    if (street == 0) {
+        for (int i = 0; i < 5; ++i) undo.old_cards[i] = board_ref[i];
+        for (int i = 0; i < 4; ++i) undo.old_cards[5 + i] = hands_ref[i];
+    }
+    // For other streets, we don't overwrite cards, just reveal them
+    
+    // Apply chance node logic (from sample_chance_node)
+    pips = {0, 0};
+    street += 1;
+    active_player = 0;
+    last_action = {-1, -1};
+    
+    if (street == 1) {  // Deal cards and post blinds
+        start_game(rng, board_ref, hands_ref);
+        active_player = 1;
+        pot += 3;
+        stacks[0] -= 2;
+        stacks[1] -= 1;
+        pips[0] = 2;
+        pips[1] = 1;
+        
+        // Pack hole cards
+        packed_cards = {PackedCards{}, PackedCards{}};
+        packed_cards[0].push(hands_ref[0]);
+        packed_cards[0].push(hands_ref[1]);
+        packed_cards[1].push(hands_ref[2]);
+        packed_cards[1].push(hands_ref[3]);
+    }
+    
+    // Reveal board cards
+    if (street == 3) {  // Flop
+        for (int i = 0; i < 3; ++i) {
+            packed_cards[0].push(board_ref[i]);
+            packed_cards[1].push(board_ref[i]);
+        }
+    }
+    if (street == 5) {  // Turn
+        packed_cards[0].push(board_ref[3]);
+        packed_cards[1].push(board_ref[3]);
+    }
+    if (street == 7) {  // River
+        packed_cards[0].push(board_ref[4]);
+        packed_cards[1].push(board_ref[4]);
+    }
+    
+    return undo;
+}
+
+void GameState::undo_chance(const ChanceUndo& undo_info) {
+    PROFILE_FUNCTION();
+    
+    // Restore street
+    street -= 1;
+    
+    // Restore stacks, pips, pot
+    stacks = undo_info.old_stacks;
+    pips = undo_info.old_pips;
+    pot = undo_info.old_pot;
+    
+    // Restore cards if we were at initial deal
+    if (street == 0) {
+        for (int i = 0; i < 5; ++i) board_ref[i] = undo_info.old_cards[i];
+        for (int i = 0; i < 4; ++i) hands_ref[i] = undo_info.old_cards[5 + i];
+        packed_cards = {PackedCards{}, PackedCards{}};
+    } else {
+        // Remove revealed cards from packed_cards
+        int num_to_remove = (street == 2) ? 3 : 1;  // Flop reveals 3, turn/river reveal 1
+        for (int i = 0; i < num_to_remove; ++i) {
+            packed_cards[0].len--;
+            packed_cards[1].len--;
+        }
+    }
+    
+    // Restore active player and last action
+    active_player = (street == 0) ? 0 : (street % 2 == 1 ? 0 : 0);
+    last_action = {-1, -1};
 }
 
 unique_ptr<GameState> GameState::next_game_state(const Action& action) const {
+    PROFILE_FUNCTION();
     if (is_chance_node() || is_terminal()) {
         throw logic_error("Not a valid street to do an action on");
     }
@@ -233,9 +357,6 @@ unique_ptr<GameState> GameState::next_game_state(const Action& action) const {
     int new_pot = pot;
     int new_street = street;
     int new_active_player = 1 - active_player;
-
-    vector<Action> new_history = action_history;
-    new_history.push_back(action);
     Action new_last_action = action;
 
     PackedActions new_packed_actions = packed_actions;
@@ -280,7 +401,6 @@ unique_ptr<GameState> GameState::next_game_state(const Action& action) const {
         new_stacks, new_pips,
         new_pot, new_street,
         new_active_player,
-        std::move(new_history),
         new_last_action,
         new_packed_actions,
         new_packed_cards
@@ -288,6 +408,7 @@ unique_ptr<GameState> GameState::next_game_state(const Action& action) const {
 }
 
 unique_ptr<GameState> GameState::sample_chance_node(mt19937& rng) const {
+    PROFILE_FUNCTION();
     if (!is_chance_node()) {
         throw logic_error("sample_chance_node called when not at a chance node");
     }
@@ -297,8 +418,6 @@ unique_ptr<GameState> GameState::sample_chance_node(mt19937& rng) const {
     int new_pot = pot;
     int new_street = street + 1;
     int new_active_player = 0;
-
-    vector<Action> new_history = action_history;
     Action new_last_action{-1, -1};
 
     PackedActions new_packed_actions = packed_actions;
@@ -342,7 +461,6 @@ unique_ptr<GameState> GameState::sample_chance_node(mt19937& rng) const {
     return make_unique<GameState>(
         board_ref, hands_ref, new_stacks, new_pips,
         new_pot, new_street, new_active_player,
-        std::move(new_history),
         new_last_action,
         new_packed_actions,
         new_packed_cards
@@ -350,6 +468,7 @@ unique_ptr<GameState> GameState::sample_chance_node(mt19937& rng) const {
 }
 
 double GameState::get_rewards(int player) const {
+    PROFILE_FUNCTION();
     if (!is_terminal()) throw logic_error("Cannot assign rewards from non-terminal state");
     if (player != 0 && player != 1) throw logic_error("player must be 0 or 1");
 
@@ -391,7 +510,11 @@ double GameState::get_rewards(int player) const {
     return stacks[player] - starting_stack + win_share * static_cast<double>(pot);
 }
 
-pair<uint64_t, uint64_t> GameState::get_ID(int player) const{
-    pair<uint64_t, uint64_t> output = {packed_cards[player].w, packed_actions.w};
-    return output;
+InfoKey GameState::get_ID(int player) const{
+    PROFILE_FUNCTION();
+    return InfoKey{
+        packed_cards[player].w, 
+        packed_actions.w, 
+        InfoKey::pack_state(pot, pips[player], pips[1 - player])
+    };
 }

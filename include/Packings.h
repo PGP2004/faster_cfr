@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <stdexcept>
 #include <iostream>
+#include <Profiler.h>
 
 using std::invalid_argument;
 using std::logic_error;
@@ -16,7 +17,7 @@ struct PackedActions {
     static constexpr uint64_t MASK = (1ULL << BITS_PER_ACTION) - 1ULL; // 0b111
 
     void push(int action_val) {
-
+        PROFILE_FUNCTION();
         if (action_val < 0 || action_val > 6) {
             throw invalid_argument("action_val must be in [0,6] (0 reserved for empty)");
         }
@@ -35,6 +36,7 @@ struct PackedActions {
 
 
     int get_or_empty(int idx) const {
+        PROFILE_FUNCTION();
         if (idx < 0 || idx >= MAX_ACTIONS) throw logic_error("idx out of range");
         if (idx >= len) return 0;
         int shift = BITS_PER_ACTION * idx;
@@ -42,6 +44,7 @@ struct PackedActions {
     }
 
     int get(int idx) const {
+        PROFILE_FUNCTION();
         if (idx < 0 || idx >= len) throw logic_error("idx out of range");
         int shift = BITS_PER_ACTION * idx;
         int v = int((w >> shift) & MASK);
@@ -62,6 +65,7 @@ struct PackedCards {
     // card must be 1..52. 0 is reserved for "empty".
     // If your natural IDs are 0..51, pass (card_id + 1).
     void push(int card_val) {
+        PROFILE_FUNCTION();
         if (card_val < 0 || card_val > 52) {
             throw invalid_argument("card_val must be in [1,52] (0 reserved for empty)");
         }
@@ -77,6 +81,7 @@ struct PackedCards {
     }
 
     int get(int idx) const {
+        PROFILE_FUNCTION();
         if (idx < 0 || idx >= len) throw logic_error("idx out of range");
         int shift = BITS_PER_CARD * idx;
         int v = int((w >> shift) & MASK);

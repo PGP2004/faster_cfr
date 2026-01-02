@@ -1,35 +1,37 @@
 #include "InfoSet.h"
 #include "GameState.h"
+#include "Profiler.h"
+#include "MinimalProfiler.h"
 #include <algorithm>
 #include <stdexcept>
 #include <iostream>
 
 using namespace std;
 
-
 void InfoSet::make_actions(const GameState& state) {
+    PROFILE_FUNCTION();
+    TIME_MAKE_ACTIONS();
+    
     abs_and_concrete.clear();
 
     int p = state.get_pot();
     int my_pip = state.get_pip(state.get_active_player());
 
-    // inc sizes (raise-by)
-    int half = p / 2;
-    int full = p;
-    int two  = 2 * p;
+    // this is good but taking a while so I made a func that just does all this shit in state
+    // vector<pair<string, Action>> candidates = {
+    //     {"fold",     {0, 0}},
+    //     {"check",    {1, 0}},
+    //     {"call",     {2, 0}},
+    //     {"half_pot", {3, my_pip + half}},
+    //     {"full_pot", {3, my_pip + full}},
+    //     {"2x_pot",   {3, my_pip + two}},
+    // };
 
-    vector<pair<string, Action>> candidates = {
-        {"fold",     {0, 0}},
-        {"check",    {1, 0}},
-        {"call",     {2, 0}},
-        {"half_pot", {3, my_pip + half}},
-        {"full_pot", {3, my_pip + full}},
-        {"2x_pot",   {3, my_pip + two}},
-    };
-
-    for (auto &na : candidates) {
-        if (state.is_legal_action(na.second)) abs_and_concrete.push_back(na);
-    }
+    // for (auto &na : candidates) {
+    //     if (state.is_legal_action(na.second)) abs_and_concrete.push_back(na);
+    // }
+    
+    state.add_legal_actions(my_pip, p, abs_and_concrete);
 
     size_t n = abs_and_concrete.size();
     strategy_sum.assign(n, 0.0);
@@ -47,6 +49,7 @@ void InfoSet::update_last_t(int t){
 }
 
 vector<double> InfoSet::get_regret_strategy() const {
+    PROFILE_FUNCTION();
     double total_sum = 0.0;
  
     vector<double> output(regret_sum.size(), 1.0 / regret_sum.size());
@@ -66,6 +69,7 @@ vector<double> InfoSet::get_regret_strategy() const {
 //todo:  get_actions_w_probs;;;
 
 vector<pair<Action, double>> InfoSet::get_action_w_probs() const {
+    PROFILE_FUNCTION();
     vector<double> regret_probs = get_regret_strategy();
 
     vector<pair<Action, double>> output;
@@ -79,10 +83,13 @@ vector<pair<Action, double>> InfoSet::get_action_w_probs() const {
 }
 
 void InfoSet::update_regret(const vector<double>& action_deltas, int t) {
+    PROFILE_FUNCTION();
 
     double discount_factor = pow(double(last_t) / double(t), regret_discount_exp);
 
     if (regret_sum.size() != action_deltas.size()) {
+        std::cerr << "Size mismatch: regret_sum.size()=" << regret_sum.size() 
+                  << ", action_deltas.size()=" << action_deltas.size() << std::endl;
         throw invalid_argument("Action deltas must meet regret_sum.size()");
     }
     
@@ -92,6 +99,7 @@ void InfoSet::update_regret(const vector<double>& action_deltas, int t) {
 }
 
 void InfoSet::update_average_strategy(double reach_prob, int t) {
+    PROFILE_FUNCTION();
 
     if (reach_prob < 0.0 || reach_prob > 1.0) {
         throw invalid_argument("Reach probability must be between 0 and 1");
@@ -107,6 +115,7 @@ void InfoSet::update_average_strategy(double reach_prob, int t) {
 }
 
 pair<Action, double> InfoSet::sample_regret_action(mt19937& rng) const {
+    PROFILE_FUNCTION();
     vector<double> probabilities = get_regret_strategy();
     discrete_distribution<int> dist(probabilities.begin(), probabilities.end());
     int sampled_idx = dist(rng);
@@ -116,6 +125,7 @@ pair<Action, double> InfoSet::sample_regret_action(mt19937& rng) const {
 
 
 unordered_map<string, double> InfoSet::get_average_strategy() const{
+    PROFILE_FUNCTION();
     unordered_map<string, double> output;
     output.reserve(abs_and_concrete.size());
 
@@ -140,3 +150,39 @@ unordered_map<string, double> InfoSet::get_average_strategy() const{
 }
 
 
+
+// Zero-allocation version: reuses provided buffers
+void InfoSet::get_action_w_probs_fast(vector<pair<Action, double>>& actions_out, vector<double>& probs_out) const {
+    PROFILE_FUNCTION();
+    
+    size_t n = regret_sum.size();
+    
+    // Resize buffers (won't allocate if capacity is sufficient)
+    probs_out.resize(n);
+    actions_out.resize(n);
+    
+    // Calculate probabilities directly into buffer
+    double total_sum = 0.0;
+    for (size_t i = 0; i < n; i++) {
+        double val = max(0.0, regret_sum[i]);
+        probs_out[i] = val;
+        total_sum += val;
+    }
+    
+    // Normalize
+    if (total_sum > 0.0) {
+        for (size_t i = 0; i < n; i++) {
+            probs_out[i] /= total_sum;
+        }
+    } else {
+        double uniform = 1.0 / n;
+        for (size_t i = 0; i < n; i++) {
+            probs_out[i] = uniform;
+        }
+    }
+    
+    // Fill actions
+    for (size_t i = 0; i < n; i++) {
+        actions_out[i] = {abs_and_concrete[i].second, probs_out[i]};
+    }
+}

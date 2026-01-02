@@ -28,6 +28,13 @@ protected:
 
 public:
     explicit InfoSet(const GameState& state);
+    
+    // Explicitly defaulted copy/move constructors for gp_hash_table compatibility
+    InfoSet(const InfoSet&) = default;
+    InfoSet(InfoSet&&) = default;
+    InfoSet& operator=(const InfoSet&) = default;
+    InfoSet& operator=(InfoSet&&) = default;
+    
     vector<double> get_regret_strategy() const;
     pair<Action, double> sample_regret_action(mt19937& rng) const;
 
@@ -36,6 +43,10 @@ public:
     void update_last_t(int t);
 
     vector<pair<Action, double>> get_action_w_probs() const;
+    
+    // Zero-allocation version: fills provided buffers
+    void get_action_w_probs_fast(vector<pair<Action, double>>& actions_out, vector<double>& probs_out) const;
+    
     unordered_map<string, double> get_average_strategy() const;
 
 };

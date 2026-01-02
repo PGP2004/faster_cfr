@@ -1,4 +1,5 @@
 #include "Utils.h"
+#include "Profiler.h"
 #include <algorithm>
 #include <cstring>
 #include <stdexcept>
@@ -59,6 +60,7 @@ static const uint16_t straight_masks[10] = {
 
 uint32_t evaluate_raw(uint8_t* ranks, uint8_t* suits, uint8_t n)
 {
+    PROFILE_FUNCTION();
     uint8_t counts_r[13];
     uint8_t counts_s[4];
     uint8_t count_counts[5];

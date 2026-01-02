@@ -13,6 +13,8 @@
 #include "CFR.h"
 #include "GameState.h"
 #include "InfoSet.h"
+#include "Profiler.h"
+#include "MinimalProfiler.h"
 
 using namespace std;
 
@@ -86,7 +88,11 @@ int main() {
         auto t1 = clock::now();
 
         double seconds = std::chrono::duration<double>(t1 - t0).count();
-        cout << fixed << setprecision(6) << "Elapsed: " << seconds << "\n";
+        cout << fixed << setprecision(6) << "Elapsed: " << seconds << " seconds\n";
+
+        // Print profiling results
+        Profiler::print_results();
+        MinimalProfiler::print_results();
 
     } 
         catch (const exception& e) {
