@@ -19,18 +19,16 @@ class GameState {
 private:
     static constexpr int starting_stack = 400;
 
-    // References to externally-owned arrays
     array<int, 5>& board_ref;
     array<int, 4>& hands_ref; // p0,p0,p1,p1
 
-    // Mutable game state
-    array<int, 2> stacks; // p0,p1
-    array<int, 2> pips;   // p0,p1
+    array<int, 2> stacks; 
+    array<int, 2> pips;   
     int pot;
     int street;
     int active_player;
 
-    vector<Action> action_history;
+    // vector<Action> action_history;
     Action last_action;
 
     // Packed abstractions / observations
@@ -52,7 +50,7 @@ public:
               int cur_pot,
               int cur_street,
               int cur_active_player,
-              vector<Action> cur_history,
+            //   vector<Action> cur_history,
               Action cur_last_action,
               PackedActions cur_packed_actions,
               array<PackedCards, 2> cur_packed_cards);
@@ -70,7 +68,7 @@ public:
     int get_pot() const;
     int get_pip(int player) const;
 
-    const std::vector<Action>& get_action_history() const;
+    // const std::vector<Action>& get_action_history() const;
 
     array<int, 2> get_hand(int player) const;
     array<int, 5> get_board() const;

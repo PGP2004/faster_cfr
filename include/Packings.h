@@ -5,7 +5,7 @@
 
 using std::invalid_argument;
 using std::logic_error;
-using std::cout;
+using std::pair;
 
 struct PackedActions {
     uint64_t w = 0;
@@ -33,14 +33,6 @@ struct PackedActions {
         ++len;
     }
 
-
-    int get_or_empty(int idx) const {
-        if (idx < 0 || idx >= MAX_ACTIONS) throw logic_error("idx out of range");
-        if (idx >= len) return 0;
-        int shift = BITS_PER_ACTION * idx;
-        return int((w >> shift) & MASK); // 0..7
-    }
-
     int get(int idx) const {
         if (idx < 0 || idx >= len) throw logic_error("idx out of range");
         int shift = BITS_PER_ACTION * idx;
@@ -59,8 +51,6 @@ struct PackedCards {
     static constexpr int MAX_CARDS = 64 / BITS_PER_CARD; // 10
     static constexpr uint64_t MASK = (1ULL << BITS_PER_CARD) - 1ULL; // 0x3F
 
-    // card must be 1..52. 0 is reserved for "empty".
-    // If your natural IDs are 0..51, pass (card_id + 1).
     void push(int card_val) {
         if (card_val < 0 || card_val > 52) {
             throw invalid_argument("card_val must be in [1,52] (0 reserved for empty)");
@@ -81,7 +71,21 @@ struct PackedCards {
         int shift = BITS_PER_CARD * idx;
         int v = int((w >> shift) & MASK);
         if (v == 0) throw logic_error("packed card was empty (0) inside active prefix");
-        return v; // 1..52
+        return v; 
     }
 };
 
+using InfoKey = pair<uint64_t, uint64_t>;
+
+struct InfoKeyHash {
+    
+    size_t operator()(const InfoKey& k) const noexcept {
+        uint64_t x = k.first ^ (k.second + 0x9e3779b97f4a7c15ULL);
+
+        x ^= x >> 30; x *= 0xbf58476d1ce4e5b9ULL;
+        x ^= x >> 27; x *= 0x94d049bb133111ebULL;
+        x ^= x >> 31;
+
+        return static_cast<size_t>(x);
+    }
+};

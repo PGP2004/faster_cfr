@@ -7,6 +7,7 @@
 
 using namespace std;
 
+//SOME GENERAL NOTES ON IMPLEMENTATION: THE STREETS ARE
 // Streets:
 // 0: Deal hole cards
 // 1: Preflop betting
@@ -17,15 +18,13 @@ using namespace std;
 // 6: Deal river
 // 7: River betting
 // 8: Terminal
-//
+
+//MY ACTION STRUCT IS:
 // Action = (type, amt)
 // type: fold=0, check=1, call=2, raise=3
 
-// Map concrete Action -> packed abstract id in [0,7].
-// Must match your InfoSet candidate list exactly.
-// Example mapping:
+//used for pakcingt later
 // 0 fold, 1 check ,2 call, 3 half_pot, 4 pot, 5 2xpot
-
 
 //THIS FUNCIONT NEEXS OT BE WORKED ON.,, not right as is
 static int abs_id_from_action(const GameState& st, const Action& a) {
@@ -36,9 +35,9 @@ static int abs_id_from_action(const GameState& st, const Action& a) {
     // raise-to -> increment
     int inc = a.amt - st.get_pip(st.get_active_player());  // add get_pip(int)
 
-    if (inc == p/2)   return 3;
-    if (inc == p)     return 4;
-    if (inc == 2*p)   return 5;
+    if (inc == p/2) return 3;
+    if (inc == p) return 4;
+    if (inc == 2*p) return 5;
 
     throw logic_error("Raise amount not in abstraction");
 }
@@ -61,18 +60,11 @@ void GameState::start_game(mt19937& rng, array<int, 5>& board, array<int, 4>& ha
     for (int i = 0; i < 4; ++i) hands[i] = deck[5 + i];
 }
 
-GameState::GameState(array<int, 5>& cur_board_ref, array<int, 4>& cur_hands_ref)
-    : board_ref(cur_board_ref),
-      hands_ref(cur_hands_ref),
-      stacks({starting_stack, starting_stack}),
-      pips({0, 0}),
-      pot(0),
-      street(0),
-      active_player(0),
-      action_history(),
-      last_action({-1, -1}),
-      packed_actions(),
-      packed_cards() {
+GameState::GameState(array<int, 5>& cur_board_ref, array<int, 4>& cur_hands_ref): 
+    board_ref(cur_board_ref), hands_ref(cur_hands_ref),
+    stacks({starting_stack, starting_stack}), pips({0, 0}), pot(0),
+    street(0),active_player(0), //   action_history(),
+    last_action({-1, -1}), packed_actions(), packed_cards() {
 
     // cout << "The length of actions is: " << packed_actions.len << "\n";
     // cout << "Action History: ";
@@ -83,28 +75,17 @@ GameState::GameState(array<int, 5>& cur_board_ref, array<int, 4>& cur_hands_ref)
     // cout << "\n";
     }
 
-GameState::GameState(array<int, 5>& cur_board_ref,
-                     array<int, 4>& cur_hands_ref,
-                     array<int, 2> cur_stacks,
-                     array<int, 2> cur_pips,
-                     int cur_pot,
-                     int cur_street,
-                     int cur_active_player,
-                     vector<Action> cur_history,
-                     Action cur_last_action,
-                     PackedActions cur_packed_actions,
+GameState::GameState(array<int, 5>& cur_board_ref, array<int, 4>& cur_hands_ref,
+                     array<int, 2> cur_stacks, array<int, 2> cur_pips,
+                     int cur_pot, int cur_street, int cur_active_player,
+                    //  vector<Action> cur_history,
+                     Action cur_last_action,PackedActions cur_packed_actions,
                      array<PackedCards, 2> cur_packed_cards)
-    : board_ref(cur_board_ref),
-      hands_ref(cur_hands_ref),
-      stacks(cur_stacks),
-      pips(cur_pips),
-      pot(cur_pot),
-      street(cur_street),
-      active_player(cur_active_player),
-      action_history(std::move(cur_history)),
-      last_action(cur_last_action),
-      packed_actions(cur_packed_actions),
-      packed_cards(cur_packed_cards) {
+    : board_ref(cur_board_ref),hands_ref(cur_hands_ref),
+      stacks(cur_stacks), pips(cur_pips), pot(cur_pot), street(cur_street),
+        active_player(cur_active_player),
+    // action_history(std::move(cur_history)),
+      last_action(cur_last_action), packed_actions(cur_packed_actions), packed_cards(cur_packed_cards) {
 
     // cout << "The length of packed actions is: " << packed_actions.len << "\n";
     // cout << "The length of action history is: " << action_history.size() << "\n";
@@ -196,9 +177,9 @@ int GameState::get_pip(int player) const {
     return pips[player];
 }
 
-const vector<Action>& GameState::get_action_history() const {
-    return action_history;
-}
+// const vector<Action>& GameState::get_action_history() const {
+//     return action_history;
+// }
 
 array<int, 2> GameState::get_hand(int player) const {
     if (player != 0 && player != 1) {
@@ -234,8 +215,8 @@ unique_ptr<GameState> GameState::next_game_state(const Action& action) const {
     int new_street = street;
     int new_active_player = 1 - active_player;
 
-    vector<Action> new_history = action_history;
-    new_history.push_back(action);
+    // vector<Action> new_history = action_history;
+    // new_history.push_back(action);
     Action new_last_action = action;
 
     PackedActions new_packed_actions = packed_actions;
@@ -244,11 +225,8 @@ unique_ptr<GameState> GameState::next_game_state(const Action& action) const {
     array<PackedCards, 2> new_packed_cards = packed_cards;
 
     int to_pay = 0;
-    if (action.type == 2) {
-        to_pay = pips[1 - active_player] - pips[active_player];
-    } else if (action.type == 3) {
-        to_pay = action.amt - pips[active_player];
-    }
+    if (action.type == 2) to_pay = pips[1 - active_player] - pips[active_player];
+    else if (action.type == 3) to_pay = action.amt - pips[active_player];
 
     new_pips[active_player] += to_pay;
     new_stacks[active_player] -= to_pay;
@@ -271,16 +249,14 @@ unique_ptr<GameState> GameState::next_game_state(const Action& action) const {
         new_street += 1;
     }
 
-    if (action.type == 0) {
-        new_street = 8;
-    }
+    if (action.type == 0) new_street = 8;
 
     return make_unique<GameState>(
         board_ref, hands_ref,
         new_stacks, new_pips,
         new_pot, new_street,
         new_active_player,
-        std::move(new_history),
+        // std::move(new_history),
         new_last_action,
         new_packed_actions,
         new_packed_cards
@@ -298,9 +274,8 @@ unique_ptr<GameState> GameState::sample_chance_node(mt19937& rng) const {
     int new_street = street + 1;
     int new_active_player = 0;
 
-    vector<Action> new_history = action_history;
+    // vector<Action> new_history = action_history;
     Action new_last_action{-1, -1};
-
     PackedActions new_packed_actions = packed_actions;
     array<PackedCards, 2> new_packed_cards = packed_cards;
 
@@ -314,16 +289,14 @@ unique_ptr<GameState> GameState::sample_chance_node(mt19937& rng) const {
         new_pips[0] += 2;
         new_pips[1] += 1;
         
-        new_packed_cards = {PackedCards{}, PackedCards{}};
-
-        // pack hole cards (visible from street 1 onward)
+        //TODO: In theory should not need pakcing above
+        //new_packed_cards = {PackedCards{}, PackedCards{}};
         new_packed_cards[0].push(hands_ref[0]);
         new_packed_cards[0].push(hands_ref[1]);
         new_packed_cards[1].push(hands_ref[2]);
         new_packed_cards[1].push(hands_ref[3]);
     }
 
-    // reveal public board cards on chance streets
     if (street == 2) {
         for (int i = 0; i < 3; ++i) {
             new_packed_cards[0].push(board_ref[i]);
@@ -342,7 +315,7 @@ unique_ptr<GameState> GameState::sample_chance_node(mt19937& rng) const {
     return make_unique<GameState>(
         board_ref, hands_ref, new_stacks, new_pips,
         new_pot, new_street, new_active_player,
-        std::move(new_history),
+        // std::move(new_history),
         new_last_action,
         new_packed_actions,
         new_packed_cards

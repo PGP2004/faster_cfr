@@ -8,8 +8,6 @@
 //I templated this to save time on infoset stuff could undo in theory
 
 //might wanna template over abstractiosn?
-
-
 using namespace std;
 
 CFR::CFR(uint32_t seed, unique_ptr<GameState> init_game_state)
@@ -18,8 +16,8 @@ CFR::CFR(uint32_t seed, unique_ptr<GameState> init_game_state)
 InfoSet& CFR::get_InfoSet(int player, const GameState& state) {
     InfoKey id = state.get_ID(player);
 
-    auto& mp = infoset_dict[player];                 // unordered_map<InfoKey, InfoSet, InfoKeyHash>
-    auto [it, inserted] = mp.try_emplace(id, state); // constructs InfoSet(state) only if missing
+    auto& mp = infoset_dict[player];                
+    auto [it, inserted] = mp.try_emplace(id, state); 
     return it->second;
 }
 

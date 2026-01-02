@@ -10,7 +10,6 @@
 
     #include "GameState.h"
     #include "InfoSet.h"
-    #include "InfoKey.h"
 
     using std::mt19937;
     using std::string;

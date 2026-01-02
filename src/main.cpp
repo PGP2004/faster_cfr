@@ -32,7 +32,6 @@ static void print_infosets(const CFR solver) {
 
         for (const string& infoset_id : ids) {
             const InfoSet& iset = all[p].at(infoset_id);
-            //TODO: implement get_avg_strat
             unordered_map<string, double> strat = iset.get_average_strategy();
 
             cout << infoset_id << "  ";
@@ -80,7 +79,6 @@ int main() {
 
         //Running Texas HoldEm with the dumbest abstraction possible.
         //will not converge in reasonable time frame
-        //solves Kuhn and like Rock Paper Scissors tho
         auto t0 = clock::now();
         run_game(epochs, iters_per_epoch);
         auto t1 = clock::now();
