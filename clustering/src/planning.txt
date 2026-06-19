@@ -1,0 +1,22 @@
+TODO:
+
+
+immediate TODO:ok so make_flop_pdfs is done but does not run as written I get an error right off the bat
+Figure out whats going on here
+
+1: Finish flop clustering
+    a: Finish the DistData loader that spits out stuff needed for approximate EMD from clustering
+    b: Make and run the approximate EMD alg
+
+2: Connect my clustering to the training loop
+    a: Idea: Load all of my canonical streets into arrays
+    b: Just index into the arrays
+    c: Use the hand indexer to canonicalize things
+        IMPORTANT: Ensure the training canonicalization matches that of the bucketing
+
+3: Test - Run the training on a small number of buckets , write like check points for training
+ where I store the evolutionp of the range on the 169 preflop hands
+ Make some visualization scheme to see if it looks right
+
+
+
