@@ -1,8 +1,8 @@
-#include "GameState.h"
-#include "InfoSet.h"
-#include "CFR.h"
+#include "game_state.h"
+#include "info_set.h"
+#include "cfr.h"
 
-#include "VectorPool.h"
+#include "vector_pool.h"
 #include <memory>
 #include <utility>
 #include <iostream>
@@ -12,12 +12,13 @@
 
 //TODO: Review
 
+using MapT =  ankerl::unordered_dense::map<InfoKey, shared_ptr<InfoSet>, Abstraction>;
 
 using namespace std;
 
-CFR::CFR(uint32_t seed, int infoset_prealloc, int vectorpool_prealloc, unique_ptr<GameState> init_game_state)
-    : init_state(std::move(init_game_state)), rng(seed) {
-
+CFR::CFR(uint32_t seed, int infoset_prealloc, int vectorpool_prealloc, unique_ptr<GameState> init_game_state, Abstraction game_abs)
+    : init_state(std::move(init_game_state)), rng(seed), game_abs(game_abs), infoset_dict{MapT(0, game_abs),MapT(0, game_abs) }{
+    
     infoset_dict[0].reserve(infoset_prealloc);
     infoset_dict[1].reserve(infoset_prealloc);
 
@@ -43,22 +44,25 @@ InfoSet& CFR::get_InfoSet(int player, const GameState& state) {
 
 }
 
-double CFR::traverse(int player, GameState& state, double pi_i, double pi_opp, int t) {
+double CFR::traverse(int player, GameState& state, double pi_i, int t) {
 
     if (state.is_terminal_node()) {
         return state.get_reward(player);
     }
+
+    // cout << "Traverse Chkpt 1" << endl;
 
     if (state.is_chance_node()) {
 
         ChanceUndo undo;
         state.write_chance_undo(undo);
         state.apply_chance(rng);
-        double util = traverse(player, state, pi_i, pi_opp, t);
+        double util = traverse(player, state, pi_i, t);
         state.undo_chance(undo);
         return util;
     }
 
+    //  cout << "Traverse Chkpt 2" << endl;
     // Player Action Branch
 
     int active_player = state.get_active_player();
@@ -72,11 +76,12 @@ double CFR::traverse(int player, GameState& state, double pi_i, double pi_opp, i
         ActionUndo undo;
         state.write_action_undo(sampled_action, undo);
         state.apply_action(sampled_action);
-        double util = traverse(player, state, pi_i, pi_opp * sample_prob, t);
+        double util = traverse(player, state, pi_i, t);
         state.undo_action(undo);
         return util;
     }
 
+    // cout << "Traverse Chkpt 3" << endl;
     // Branch where active player = current player
 
     InfoSet& infoset = get_InfoSet(player, state);
@@ -99,7 +104,7 @@ double CFR::traverse(int player, GameState& state, double pi_i, double pi_opp, i
         ActionUndo undo;
         state.write_action_undo(act_and_prob.first, undo);
         state.apply_action(act_and_prob.first);
-        double action_util = traverse(player, state, pi_i * act_and_prob.second, pi_opp, t);
+        double action_util = traverse(player, state, pi_i * act_and_prob.second, t);
         state.undo_action(undo);
         
         node_util += act_and_prob.second * action_util;
@@ -119,8 +124,9 @@ double CFR::traverse(int player, GameState& state, double pi_i, double pi_opp, i
 
 void CFR::train(int num_iterations) {
     for (int i = 0; i < num_iterations; ++i) {
-        traverse(0, *init_state, 1.0, 1.0, i);
-        traverse(1, *init_state, 1.0, 1.0, i);
+        traverse(0, *init_state, 1.0,  i);
+        // cout << "Did we finish the first traverse " << endl;
+        traverse(1, *init_state, 1.0,  i);
     }
 }
 

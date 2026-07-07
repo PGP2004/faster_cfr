@@ -9,14 +9,27 @@
 #include <map>
 #include <string>
 
-using std::swap;
-using std::string;
-using std::array;
-using std::mt19937;
-using std::vector;
+#include <iostream>
+#include <fstream>
 
-static uint8_t card_rank(uint8_t c) noexcept { return (uint8_t)(c / 4); }
-static uint8_t card_suit(uint8_t c) noexcept { return (uint8_t)(c % 4); }
+extern "C" {
+#define _Bool bool
+#include "hand_index.h"
+#undef _Bool
+}
+
+struct Indexer {
+    hand_indexer_t h;
+    Indexer(uint32_t rounds, const uint8_t* cpr) { hand_indexer_init(rounds, cpr, &h); }
+    ~Indexer() { hand_indexer_free(&h); }
+    Indexer(const Indexer&) = delete; 
+    Indexer& operator=(const Indexer&) = delete;
+};
+
+
+//TODO: Ensure they match the one used by the indexer
+inline uint8_t card_rank(uint8_t c) noexcept { return (uint8_t)(c / 4); }
+inline uint8_t card_suit(uint8_t c) noexcept { return (uint8_t)(c % 4); }
 
 struct Action{
     int type;
@@ -69,8 +82,8 @@ struct ActionUndo {
 };
 
 struct ChanceUndo {
-    array<int, 2> old_pips{0, 0};
-    array<int, 2> old_stacks{0, 0};
+    std::array<int, 2> old_pips{0, 0};
+    std::array<int, 2> old_stacks{0, 0};
     int old_pot = 0;
     int old_active_player = 0;
     int old_street = 0;
@@ -97,6 +110,48 @@ struct ChanceUndo {
             && old_last_action == other.old_last_action;
     }
 };
+
+
+struct DataHeader{
+    uint64_t round; //0 =preflop , 1 = flop, 2 = turn, 3 = river
+    uint64_t num_rows;
+    uint64_t num_cols;
+    uint64_t bytes_per_elt;
+    bool operator==(const DataHeader&) const = default;
+
+    std::string to_string() const {
+        return "DataHeader{round=" + std::to_string(round) + 
+        + ", num_rows=" + std::to_string(num_rows)
+        + ", num_cols=" + std::to_string(num_cols)
+        + ", bytes_per_elt=" + std::to_string(bytes_per_elt) + "}";
+    }
+};
+
+//TODO: Clean up the data loading across my scripts
+template <typename T>
+std::pair<std::vector<T>, DataHeader> load_matrix_and_header(const std::string& result_path) {
+    std::ifstream in(result_path, std::ios::binary);
+    if (!in) throw std::runtime_error("cannot open " + result_path);
+
+    DataHeader header;
+    in.read(reinterpret_cast<char*>(&header), sizeof(header));
+
+    if (in.gcount() != static_cast<std::streamsize>(sizeof(header))) throw std::runtime_error("missing header");
+    
+    if (header.bytes_per_elt != sizeof(T)) throw std::runtime_error("Wrong size type compared to header");
+
+    uint64_t body_bytes = header.num_rows * header.num_cols * header.bytes_per_elt;
+
+    std::streampos here = in.tellg(); in.seekg(0, std::ios::end);
+    std::streampos end = in.tellg(); in.seekg(here);
+    if (static_cast<uint64_t>(end - here) != body_bytes) throw std::runtime_error("body size does not match header");
+
+    std::vector<T> results(body_bytes / sizeof(T));
+    in.read(reinterpret_cast<char*>(results.data()), static_cast<std::streamsize>(body_bytes));
+    if (static_cast<uint64_t>(in.gcount()) != body_bytes) throw std::runtime_error("truncated body");
+
+    return {std::move(results), header};
+}
 
 uint32_t evaluate_raw(uint8_t* ranks, uint8_t* suits, uint8_t n);
 

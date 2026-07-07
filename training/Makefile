@@ -1,18 +1,23 @@
 CXX      := g++
-CXXFLAGS := -std=c++17 -Wall -Wextra -O2 -Iinclude
-TARGET   := pkrbots
+CXXFLAGS := -std=c++20 -Wall -Wextra -g -O0 -Iinclude -I../external/hand-isomorphism/src
+LDFLAGS  := -L../external/hand-isomorphism -lhand_index
+TARGET   := main
 SRCDIR   := src
+BUILDDIR := build
 
 SRCS := $(wildcard $(SRCDIR)/*.cpp)
-OBJS := $(SRCS:.cpp=.o)
+OBJS := $(patsubst $(SRCDIR)/%.cpp,$(BUILDDIR)/%.o,$(SRCS))
 
 $(TARGET): $(OBJS)
-	$(CXX) $(CXXFLAGS) -o $@ $(OBJS)
+	$(CXX) $(CXXFLAGS) -o $@ $(OBJS) $(LDFLAGS)
 
-%.o: %.cpp
+$(BUILDDIR)/%.o: $(SRCDIR)/%.cpp | $(BUILDDIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
+$(BUILDDIR):
+	mkdir -p $(BUILDDIR)
+
 clean:
-	rm -f $(OBJS) $(TARGET)
+	rm -rf $(BUILDDIR) $(TARGET)
 
 .PHONY: clean

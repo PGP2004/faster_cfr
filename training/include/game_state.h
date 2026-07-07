@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Utils.h"
-#include "Packings.h"
+#include "utils.h"
+#include "packings.h"
 
 #include <array>
 #include <cstdint>
@@ -23,17 +23,23 @@ using std::unique_ptr;
 using std::mt19937;
 using std::logic_error;
 
+
+extern "C" {
+#define _Bool bool
+#include "hand_index.h"
+#undef _Bool
+}
+
 class GameState {
 
 private:
 
     static constexpr int starting_stack = 200;
 
-    array<int, 5> board;
-    array< array<int, 2>, 2> hands;
-
+    array<array<int, 4>, 2> hand_ids;
     array<int, 2> stacks;
     array<int, 2> pips;
+    
     double p1_win_share;
 
     int pot;
@@ -42,9 +48,8 @@ private:
     Action last_action;
 
     PackedActions packed_actions;
-    array<PackedCards, 2> packed_cards;
-
     int abs_id_from_action(const Action& a) const;
+
 
 public:
 
@@ -52,7 +57,6 @@ public:
     GameState(const GameState&) = default;
     GameState& operator=(const GameState&) = default;
 
-    double get_p1_winshare() const;
     double get_reward(int player) const;
     bool is_legal_action(const Action& action) const;
 
@@ -77,29 +81,10 @@ public:
         return pips[player];
     }
 
-    inline pair<int,int> get_hand(int player) const {
-        if (player != 0 && player != 1) throw logic_error("The player index must be one of 1 or 0");
-        return {hands[player][0], hands[player][1]};
-    }
-
+    //TODO: move this over to the abstraction class
     inline InfoKey get_ID(int player) const {
         if (player != 0 && player != 1) throw logic_error("The player index must be one of 1 or 0");
-        return InfoKey{packed_cards[player], packed_actions};
+        return InfoKey{street/2, hand_ids[player][street/2], packed_actions};
     }
-
-    inline bool operator==(const GameState& o) const noexcept {
-        return board == o.board
-            && hands == o.hands
-            && stacks == o.stacks
-            && pips == o.pips
-            && p1_win_share == o.p1_win_share
-            && pot == o.pot
-            && street == o.street
-            && active_player == o.active_player
-            && last_action == o.last_action
-            && packed_actions == o.packed_actions
-            && packed_cards == o.packed_cards;
-    }
-
 
 };

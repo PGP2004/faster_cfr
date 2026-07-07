@@ -1,6 +1,6 @@
-#include "Utils.h"
-#include "Packings.h"
-#include "GameState.h"
+#include "utils.h"
+#include "packings.h"
+#include "game_state.h"
 
 #include <algorithm>
 #include <string>
@@ -16,48 +16,23 @@ using namespace std;
 
 using std::mt19937;
 
-
-
-static void shuffle_and_deal(mt19937& rng, array<array<int,2>,2>& hands, array<int,5>& board) {
-
-    //deck object created just once
-    static array<int, 52> deck = []{
-        array<int,52> d{};
-        for (int i = 0; i < 52; i++) d[i] = i;
-        return d;}();
-
-    //shuffle deck
-    for (int i = 0; i < 9; ++i) {
-        uniform_int_distribution<int> dist(i, 51);
-        int j = dist(rng);
-        swap(deck[i], deck[j]);
-    }
-
-    for (int i = 0; i < 5; ++i) board[i] = deck[i];
-    hands[0][0] = deck[5]; hands[0][1] = deck[6];
-    hands[1][0] = deck[7]; hands[1][1] = deck[8];
+extern "C" {
+#define _Bool bool
+#include "hand_index.h"
+#undef _Bool
 }
 
-GameState::GameState(): board{{-1,-1, -1, -1, -1}}, hands{{{-1,-1}, {-1,-1}}}, p1_win_share(-1), stacks{starting_stack, starting_stack},
- pips{0,0}, pot(0),street(0),active_player(0), last_action{-1,-1}, packed_actions{}, packed_cards{} {}
 
-double GameState::get_p1_winshare() const{
+double get_p1_winshare(const array<array<uint8_t, 7>, 2> hands){
     uint8_t r0[7], s0[7];
     uint8_t r1[7], s1[7];
 
-    for (int i = 0; i < 5; ++i) {
-        uint8_t c = (uint8_t) board[i];
-        r0[i] = card_rank(c);  s0[i] = card_suit(c);
-        r1[i] = card_rank(c);  s1[i] = card_suit(c);
+    for (int i = 0; i < 7; ++i) {
+        uint8_t c0 = hands[0][i];
+        uint8_t c1 = hands[1][i];
+        r0[i] = card_rank(c0);  s0[i] = card_suit(c0);
+        r1[i] = card_rank(c1);  s1[i] = card_suit(c1);
     }
-
-    uint8_t p0_card_1 = (uint8_t)hands[0][0], p0_card_2 = (uint8_t)hands[0][1];
-    r0[5] = card_rank(p0_card_1); s0[5] = card_suit(p0_card_1);
-    r0[6] = card_rank(p0_card_2); s0[6] = card_suit(p0_card_2);
-
-    uint8_t p1_card_1 = (uint8_t)hands[1][0], p1_card_2 = (uint8_t)hands[1][1];
-    r1[5] = card_rank(p1_card_1); s1[5] = card_suit(p1_card_1);
-    r1[6] = card_rank(p1_card_2); s1[6] = card_suit(p1_card_2);
 
     uint32_t score0 = evaluate_raw(r0, s0, 7);
     uint32_t score1 = evaluate_raw(r1, s1, 7);
@@ -65,6 +40,61 @@ double GameState::get_p1_winshare() const{
     if (score1 > score0) return 1.0;
     if (score1 < score0) return 0.0;
     return 0.5;
+}
+
+static double deal_and_get_winshare(mt19937& rng, array<array<int, 4>, 2>& hand_ids) {
+    //deck object created just once
+    static array<int, 52> deck = []{
+        array<int,52> d{};
+        for (int i = 0; i < 52; i++) d[i] = i;
+        return d;}();
+
+    static const array<uint8_t, 1> preflop_counts = {2};
+    static const array<uint8_t, 2> flop_counts = {2, 3};
+    static const array<uint8_t, 2> turn_counts = {2, 4};
+    static const array<uint8_t, 2> river_counts = {2, 5};
+    
+    static Indexer preflop_indexer(preflop_counts.size(), preflop_counts.data());
+    static Indexer flop_indexer(flop_counts.size(), flop_counts.data());
+    static Indexer turn_indexer(turn_counts.size(), turn_counts.data());
+    static Indexer river_indexer(river_counts.size(), river_counts.data());
+    static array<array<uint8_t,7>,2> hands;
+    
+    //shuffle deck
+    for (int i = 0; i < 9; ++i) {
+        uniform_int_distribution<int> dist(i, 51);
+        int j = dist(rng);
+        swap(deck[i], deck[j]);
+    }
+
+    hands[0][0] = deck[0]; hands[0][1] = deck[1];
+    hands[1][0] = deck[2]; hands[1][1] = deck[3];
+
+    size_t count = 2;
+
+    for (int i = 4; i < 9; ++i){
+        hands[0][count] = deck[i];
+        hands[1][count] = deck[i];
+        count += 1;
+    }
+
+    for (size_t p = 0; p < 2; ++p){
+        hand_ids[p][0] = static_cast<int>(hand_index_last(&preflop_indexer.h, hands[p].data()));
+        hand_ids[p][1] = static_cast<int>(hand_index_last(&flop_indexer.h, hands[p].data()));
+        hand_ids[p][2] = static_cast<int>(hand_index_last(&turn_indexer.h, hands[p].data()));
+        hand_ids[p][3] = static_cast<int>(hand_index_last(&river_indexer.h, hands[p].data()));
+    }
+
+    double p1_winshare = get_p1_winshare(hands);
+    return p1_winshare;
+}
+
+
+GameState::GameState(): hand_ids{}, stacks{starting_stack, starting_stack}, 
+pips{0,0}, p1_win_share(-1), pot(0), street(0), active_player(0), 
+last_action{-1,-1}, packed_actions{} {
+    hand_ids[0].fill(-1);
+    hand_ids[1].fill(-1);
 }
 
 double GameState::get_reward(int player) const {
@@ -84,8 +114,7 @@ double GameState::get_reward(int player) const {
     }
 
     double reward = (stacks[player] - starting_stack) + win_share * static_cast<double>(pot);
-
-    return (stacks[player] - starting_stack) + win_share * static_cast<double>(pot);
+    return reward;
 }
 
 
@@ -131,13 +160,8 @@ void GameState::write_action_undo(const Action& action, ActionUndo& undo) const 
 
 int GameState::abs_id_from_action(const Action& a) const{
     if (a.type < 3) return a.type ;
-
     int inc = a.amt - pips[active_player];  
-
-    if (inc == pot/2)   return 3;
-    if (inc == pot)     return 4;
-    if (inc == 2*pot)   return 5;
-
+    if (inc == pot) return 3;
     throw logic_error("Raise amount not in abstraction");
 }
 
@@ -158,8 +182,10 @@ void GameState::apply_action(const Action& action) {
     
     bool round_ended = false;
 
-    if (last_action.type == 3 && action.type == 2) round_ended = true; //raise , call
-    if (last_action.type == 1 && action.type == 1) round_ended = true; //check check
+    if (last_action.type == 3 && action.type == 2) round_ended = true; //raise then call
+    if (last_action.type == 1 && action.type == 1) round_ended = true; //check then check
+    if (last_action.type == 2 && action.type == 1) round_ended = true; //limp then check
+
 
     last_action = action;
     active_player = 1 - active_player; 
@@ -170,7 +196,6 @@ void GameState::apply_action(const Action& action) {
 
     else if (round_ended){
         street += 1;
-        //pips cleaned in the chance round;;
     }
 }
 
@@ -209,40 +234,25 @@ void GameState::apply_chance(mt19937& rng) {
     last_action = {-1, -1};
 
     if (street == 0) { 
-        shuffle_and_deal(rng, hands, board);
-        p1_win_share = get_p1_winshare();
-
+        p1_win_share = deal_and_get_winshare(rng, hand_ids);
         active_player = 1;
         pot = 3;
         stacks[0] = starting_stack - 2;
         stacks[1] = starting_stack - 1;
         pips[0] = 2;
         pips[1] = 1;
-
-        for (int i = 0; i < 2; i++){
-            packed_cards[0].push(hands[0][i]);
-            packed_cards[1].push(hands[1][i]);
-        }
     }
 
     if (street == 2) { 
         active_player = 0;
-        for (int i = 0; i < 3; i++){
-            packed_cards[0].push(board[i]);
-            packed_cards[1].push(board[i]);
-        }
     }
 
     if (street == 4) { 
         active_player = 0;
-        packed_cards[0].push(board[3]);
-        packed_cards[1].push(board[3]);
     }
 
     if (street == 6) { 
         active_player = 0;
-        packed_cards[0].push(board[4]);
-        packed_cards[1].push(board[4]);
     }
 
     street += 1;
@@ -251,21 +261,11 @@ void GameState::apply_chance(mt19937& rng) {
 void GameState::undo_chance(const ChanceUndo& undo) {
 
     if (undo.old_street == 0){
-        board.fill(-1);
-        hands[0].fill(-1);
-        hands[1].fill(-1);
+        hand_ids[0].fill(-1);
+        hand_ids[1].fill(-1);
         p1_win_share = -1;
     }
     
-    int n = 0;
-    if (undo.old_street == 0) n = 2;
-    else if (undo.old_street == 2) n = 3;
-    else if (undo.old_street == 4 || undo.old_street == 6) n = 1;
-
-    for (int i = 0; i < n; i++){
-        packed_cards[0].del();
-        packed_cards[1].del();
-    }
 
     pips = undo.old_pips;
     stacks = undo.old_stacks;

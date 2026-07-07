@@ -1,4 +1,4 @@
-#include "InfoSet.h"
+#include "info_set.h"
 #include <algorithm>
 #include <stdexcept>
 #include <iostream>
@@ -15,14 +15,21 @@ void InfoSet::make_actions(const GameState& state) {
     int pot = state.get_pot();
     int my_pip = state.get_pip(state.get_active_player());
 
+
+            //     {-1, "placeholder"},
+            // {0, "fold"},
+            // {1, "check"},
+            // {2, "call"},
+            // {3, "raise"},
+
+    //Action candidates were messed up
+
     vector<pair<string, Action>> candidates = {
         {"fold",     {0, 0}},
-        {"check",    {1, 0}},
+        {"check",     {1, 0}},
         {"call",     {2, 0}},
-
-        {"half_pot", {3, my_pip + pot/2}},
-        {"pot",      {3, my_pip + pot}},
-        {"2x_pot",   {3, my_pip + 2*pot}},
+        {"pot", {3, my_pip + pot}},
+        
     };
 
     for (const auto& cand : candidates) {
