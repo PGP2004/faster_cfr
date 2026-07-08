@@ -93,15 +93,19 @@ void InfoSet::update_average_strategy(double reach_prob, vector<double>& cur_str
 }
 
 pair<Action, double> InfoSet::sample_regret_action(mt19937& rng, vector<double>& probabilities) const {
-    
-    get_regret_strategy(probabilities);
-    
-    discrete_distribution<int> dist(probabilities.begin(), probabilities.end());
-    int sampled_idx = dist(rng);
-    
-    return {abs_and_concrete[sampled_idx].second, probabilities[sampled_idx]};
-}
 
+    get_regret_strategy(probabilities);
+    uniform_real_distribution<double> unif(0.0, 1.0);
+    double r = unif(rng);
+    double cum = 0.0;
+    size_t idx = probabilities.size() - 1;  
+    
+    for (size_t i = 0; i < probabilities.size(); ++i) {
+        cum += probabilities[i];
+        if (r < cum) { idx = i; break; }
+    }
+    return {abs_and_concrete[idx].second, probabilities[idx]};
+}
 unordered_map<string, double> InfoSet::get_average_strategy() const{
     
     unordered_map<string, double> output;

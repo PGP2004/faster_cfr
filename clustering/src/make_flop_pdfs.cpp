@@ -38,7 +38,6 @@ void get_sparse_flop_pdf(const array<uint8_t, 5>& cards, const vector<uint16_t>&
     }
 }
 
-//TODO: Fix
 void write_sparse_flop_pdfs(const string& turn_assignments_path, const string& write_path) {
 
     if (fs::exists(write_path)) throw runtime_error("write path already exists");
@@ -72,7 +71,6 @@ void write_sparse_flop_pdfs(const string& turn_assignments_path, const string& w
     if (!out) throw runtime_error("write failed: " + write_path);
 }
 
-
 vector<int> get_dist_matrix(const vector<uint8_t>& centers, uint8_t vector_dim, uint64_t num_centers){
     size_t num_elts = num_centers*num_centers;
 
@@ -88,10 +86,14 @@ vector<int> get_dist_matrix(const vector<uint8_t>& centers, uint8_t vector_dim, 
         for (size_t j = 0; j < i; ++j){
 
             size_t c_j0_idx = vector_dim*j;
+            
             size_t d_ij_idx = num_centers*i + j;
             size_t d_ji_idx = num_centers*j + i;
 
-            dist_matrix[d_ij_idx] = L1_dist(centers, c_i0_idx, centers, c_j0_idx, vector_dim);
+            span<const uint8_t>ctr_i_span(&centers[c_i0_idx], vector_dim);
+            span<const uint8_t>ctr_j_span(&centers[c_j0_idx], vector_dim);
+
+            dist_matrix[d_ij_idx] =  L1_dist(ctr_i_span, ctr_j_span);
             dist_matrix[d_ji_idx] = dist_matrix[d_ij_idx];
         }
     }
@@ -99,17 +101,6 @@ vector<int> get_dist_matrix(const vector<uint8_t>& centers, uint8_t vector_dim, 
    return dist_matrix;
 }
 
-void write_distance_matrix(const string& turn_center_path, const string& write_path) {
-
-    if (fs::exists(write_path)) throw runtime_error("write path already exists");
-
-    auto [centers, center_header] = load_matrix_and_header<uint8_t>(turn_center_path);
-    uint64_t num_centers = center_header.num_rows;
-    uint64_t num_buckets = center_header.num_cols;
-    vector<int> distance_matrix = get_dist_matrix(centers, num_buckets, num_centers);
-    DataHeader dist_matrix_header{2 , num_centers, num_centers, sizeof(int)};
-    write_matrix_and_header<int>(write_path, dist_matrix_header, distance_matrix);   
-}
 
 void write_flop_pdfs_and_dist_matrix(const string& assignments_path, const string& centers_path,
     const string& pdfs_path, const string& dist_matrix_path){
@@ -117,7 +108,14 @@ void write_flop_pdfs_and_dist_matrix(const string& assignments_path, const strin
     if (fs::exists(pdfs_path)) throw runtime_error("write path already exists");
     if (fs::exists(dist_matrix_path)) throw runtime_error("write path already exists");
 
-    write_distance_matrix(centers_path, dist_matrix_path);
+    auto [centers, center_header] = load_matrix_and_header<uint8_t>(centers_path);
+    uint64_t num_centers = center_header.num_rows;
+    uint64_t num_buckets = center_header.num_cols;
+
+    vector<int> distance_matrix = get_dist_matrix(centers, num_buckets, num_centers);
+    DataHeader dist_matrix_header{2 , num_centers, num_centers, sizeof(int)};
+    write_matrix_and_header<int>(dist_matrix_path, dist_matrix_header, distance_matrix);   
+
     write_sparse_flop_pdfs(assignments_path, pdfs_path);
 }
 
@@ -127,9 +125,9 @@ int main(int argc, char** argv) {
     fs::path root = exe.parent_path();                              
     fs::path storage = root / "storage";
 
-    write_flop_pdfs_and_dist_matrix((storage / "turn_assignemnts").string(),
-        (storage / "turn_cdf_centers").string(), (storage / "turn_distance_matrix").string(),
-        (storage / "sparse_flop_pdfs").string());
+    write_flop_pdfs_and_dist_matrix((storage / "turn_assignments").string(),
+        (storage / "turn_cdf_centers").string(),(storage / "sparse_flop_pdfs").string(),
+        (storage / "turn_distance_matrix").string());
 
     cout << "Finished" << endl;
 }

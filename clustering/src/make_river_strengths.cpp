@@ -48,7 +48,7 @@ int get_strength(std::array<uint8_t, 7>& board) {
     }
 
     double win_rate = score / num_opps;
-    uint8_t strength = static_cast<uint8_t>(lround(100*win_rate));
+    uint8_t strength = static_cast<uint8_t>(100*win_rate);
     return strength;
 }
 

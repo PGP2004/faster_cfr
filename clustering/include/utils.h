@@ -3,7 +3,8 @@
 #include <array>
 #include <vector>
 #include <fstream>
-
+#include <span>
+#include <iostream>
 
 extern "C" {
 #define _Bool bool
@@ -25,18 +26,16 @@ struct Indexer {
     Indexer& operator=(const Indexer&) = delete;
 };
 
-inline int L1_dist(const std::vector<uint8_t>& arr_a, size_t a_idx,
-            const std::vector<uint8_t>& arr_b, size_t b_idx,
-            uint8_t dim) {
-    const uint8_t* a_ptr = arr_a.data() + a_idx;
-    const uint8_t* b_ptr = arr_b.data() + b_idx;
+
+inline int L1_dist(std::span<const uint8_t> a, std::span<const uint8_t> b){
     int sum = 0;
 
-    for (uint8_t j = 0; j < dim; ++j)
-        sum += std::abs(int(a_ptr[j]) - int(b_ptr[j]));    
+    if (a.size() != b.size()) throw std::runtime_error("Dimensions dont match in L1 dist");
+
+    for (size_t i = 0; i < a.size(); ++i)
+        sum += std::abs(static_cast<int>(a[i]) - static_cast<int>(b[i]));
     return sum;
 }
-
 
 struct DataHeader{
     uint64_t round; //0 =preflop , 1 = flop, 2 = turn, 3 = river
@@ -63,6 +62,10 @@ std::pair<std::vector<T>, DataHeader> load_matrix_and_header(const std::string& 
     in.read(reinterpret_cast<char*>(&header), sizeof(header));
 
     if (in.gcount() != static_cast<std::streamsize>(sizeof(header))) throw std::runtime_error("missing header");
+    std::cout << "The header says bytes per elt of: " << header.bytes_per_elt << std::endl;
+    std::cout << "the template says bytes per elt of : " << sizeof(T) << std::endl;
+
+
     if (header.bytes_per_elt != sizeof(T)) throw std::runtime_error("Wrong size type compared to header");
 
     uint64_t body_bytes = header.num_rows * header.num_cols * header.bytes_per_elt;

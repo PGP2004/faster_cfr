@@ -1,18 +1,9 @@
 # Build artifacts
-*.o
-*.d
 build/
-
-# Compiled executables
-clustering/make_flop_pdfs
-clustering/make_river_strengths
-clustering/make_turn_cdfs
-clustering/make_turn_clusters
-clustering/flop_emd_clusters
-training/pkrbots
-
-clustering/storage/
 *.a
+
+# Data
+clustering/storage/
 
 # macOS
 .DS_Store

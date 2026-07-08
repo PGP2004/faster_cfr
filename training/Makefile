@@ -4,20 +4,22 @@ LDFLAGS  := -L../external/hand-isomorphism -lhand_index
 TARGET   := main
 SRCDIR   := src
 BUILDDIR := build
+OBJDIR   := $(BUILDDIR)/obj
+BINDIR   := $(BUILDDIR)/bin
 
 SRCS := $(wildcard $(SRCDIR)/*.cpp)
-OBJS := $(patsubst $(SRCDIR)/%.cpp,$(BUILDDIR)/%.o,$(SRCS))
+OBJS := $(patsubst $(SRCDIR)/%.cpp,$(OBJDIR)/%.o,$(SRCS))
 
-$(TARGET): $(OBJS)
+$(BINDIR)/$(TARGET): $(OBJS) | $(BINDIR)
 	$(CXX) $(CXXFLAGS) -o $@ $(OBJS) $(LDFLAGS)
 
-$(BUILDDIR)/%.o: $(SRCDIR)/%.cpp | $(BUILDDIR)
+$(OBJDIR)/%.o: $(SRCDIR)/%.cpp | $(OBJDIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-$(BUILDDIR):
-	mkdir -p $(BUILDDIR)
+$(OBJDIR) $(BINDIR):
+	mkdir -p $@
 
 clean:
-	rm -rf $(BUILDDIR) $(TARGET)
+	rm -rf $(BUILDDIR)
 
 .PHONY: clean
