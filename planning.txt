@@ -1,10 +1,7 @@
-TODO: Change the way the CFR class is using the InfoKeyHash
 
 
-Immediate TODO
-Go and understand the Parallelism parts of the alg
+TODO: Recompute my bucketing it turns out all my stuff was kind of done incorrectly cus of a annoying bug in the strenths (sad!)
 
-TODO: Add a bucketing for strengths.
 TODO: Switch to discounted CFR over linear CFR for numerical stability.
 TODO: Add a function in the training main to store the preflop range at a given number of iters.
 TODO: Save preflop ranges over a ton of training iters (some geometric progression ie 100, 1000, 10,000, 100,000 , )

@@ -17,7 +17,7 @@ using MapT =  ankerl::unordered_dense::map<InfoKey, shared_ptr<InfoSet>, InfoKey
 using namespace std;
 
 CFR::CFR(uint32_t seed, int infoset_prealloc, int vectorpool_prealloc, unique_ptr<GameState> init_game_state, Abstraction game_abs)
-    : init_state(std::move(init_game_state)), rng(seed), game_abs(game_abs), infoset_dict{MapT(0, game_abs),MapT(0, game_abs) }{
+    : init_state(std::move(init_game_state)), rng(seed), game_abs(game_abs){
     
     infoset_dict[0].reserve(infoset_prealloc);
     infoset_dict[1].reserve(infoset_prealloc);
