@@ -11,6 +11,8 @@
 
     using namespace std;
 
+namespace emd{
+
     //TODO: Finish this matching paper convention
     void fill_emd_cache(const Params& params, const Center& ctr, EMDCache& emd_cache){
 
@@ -329,6 +331,7 @@
 
         return {std::move(centers), std::move(c_buff.assignments)};
     }
+}
 
 
 

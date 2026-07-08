@@ -12,7 +12,7 @@
 
 //TODO: Review
 
-using MapT =  ankerl::unordered_dense::map<InfoKey, shared_ptr<InfoSet>, Abstraction>;
+using MapT =  ankerl::unordered_dense::map<InfoKey, shared_ptr<InfoSet>, InfoKeyHash>;
 
 using namespace std;
 
@@ -29,6 +29,7 @@ CFR::CFR(uint32_t seed, int infoset_prealloc, int vectorpool_prealloc, unique_pt
 InfoSet& CFR::get_InfoSet(int player, const GameState& state) {
 
     InfoKey id = state.get_ID(player);
+    id.hand_id = game_abs.cluster_of(id.street, id.hand_id);   // now holds cluster id
 
     auto& mp = infoset_dict[player];
 

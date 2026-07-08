@@ -9,7 +9,14 @@
 #include <vector>
 #include <span>
 
+
+
+
 using namespace std;
+
+//using namesapce here cus its awfully similar to the EMD stuff since theres a lot of overlap.
+
+namespace l1{
 
 void update_ass_and_counts(const Params& params, const vector<uint8_t>& pts, 
     const vector<uint8_t>& centers, ClusterBuffer& c_buff) {
@@ -199,4 +206,5 @@ pair<vector<uint8_t>,vector<uint16_t>> l1_k_means(const Params& params, const ve
     }
 
     return {std::move(centers), std::move(c_buff.assignments)};
+}
 }

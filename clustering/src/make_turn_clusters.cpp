@@ -20,12 +20,12 @@ void write_assignment_and_centers(const string& center_write_path, const string&
 
     auto [cdfs, cdf_header] = load_matrix_and_header<uint8_t>(cdf_read_path);
 
-    size_t num_buckets = static_cast<size_t>(cdf_header.num_rows);
-    size_t num_pts = static_cast<size_t>(cdf_header.num_cols);
+    size_t num_pts  = cdf_header.num_rows;
+    size_t num_buckets = cdf_header.num_cols;
     size_t max_iters = 1000;
 
-    Params params{num_centers, num_pts , num_buckets, max_iters, rng};
-    auto [centers, assignments] = l1_k_means(params, cdfs);
+    l1::Params params{num_centers, num_pts , num_buckets, max_iters, rng};
+    auto [centers, assignments] = l1::l1_k_means(params, cdfs);
         
     cout << "Finished L1 k means" << endl;
 

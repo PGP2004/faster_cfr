@@ -63,9 +63,29 @@ static void run_game(int epochs,
 //     }
 // }
 
+// static uint8_t string_to_card(char rc, char sc){
+//     uint8_t suit_int = parse_suit(sc);
+//     uint8_t rank_int = parse_rank(rc);
+
+//     return
+
+
+// }
+
 // unordered_map<string, double> extract_preflop(unique_ptr<GameState> init_state ){
 
 //     vector<string> suits{"c", "d"};
+//     vector<string> ranks{"A", "K", "Q", "J", "T", "9", "8", "7", "6", "5", "4", "3", "2"};
+
+//     for (size_t rk_0 = 0; rk_0 < ranks.size(); ++rk_0){
+//         for (size_t rk_1  = rk_0; rk_1 < ranks.size(); ++rk_1){
+
+//             //onsuit: 
+
+//         }
+//     }
+
+//     for (string r
 
 
 

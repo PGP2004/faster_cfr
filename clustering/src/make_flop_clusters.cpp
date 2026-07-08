@@ -36,17 +36,17 @@ void write_flop_assignment_and_centers(const string& sparse_reps_path, const str
 
     vector<float> f_dist_matrix(dist_matrix.begin(), dist_matrix.end());
 
-    Params params{num_centers, num_atoms, atoms_per_center, 
+    emd::Params params{num_centers, num_atoms, atoms_per_center, 
         flop_size, num_flops, f_dist_matrix, max_iters, rng};
     
-    auto [ctrs, assignments] = emd_k_means(params, sparse_reps);
+    auto [ctrs, assignments] = emd::emd_k_means(params, sparse_reps);
     cout << "Finished EMD k means" << endl;
 
     size_t num_ctr_elts = ctrs.size()*ctrs[0].atom_wts.size();
     vector<float> wts; vector<uint16_t> atoms;
     wts.reserve(num_ctr_elts); atoms.reserve(num_ctr_elts);
 
-    for (const Center& ctr : ctrs){
+    for (const emd::Center& ctr : ctrs){
         for (size_t i = 0; i < ctr.atoms.size(); ++i) {
             wts.push_back(ctr.atom_wts[i]);
             atoms.push_back(ctr.atoms[i]);

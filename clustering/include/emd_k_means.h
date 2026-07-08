@@ -10,6 +10,9 @@
 #include <vector>
 #include <span>
 
+
+namespace emd{
+
 //TODO: Add support for variable atoms per center
 struct Center{
     std::vector<float> atom_wts;
@@ -72,3 +75,4 @@ bool step(const Params& params, const std::vector<std::uint16_t>& pdfs,
 
 std::pair<std::vector<Center>, std::vector<std::uint16_t>> emd_k_means(const Params& params, const std::vector<std::uint16_t>& pdfs);
    
+}

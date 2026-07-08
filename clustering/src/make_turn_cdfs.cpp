@@ -69,7 +69,7 @@ void write_turn_strength_cdf(const string& river_strength_path, const string& wr
     ofstream out(write_path, ios::binary);
     if (!out) throw runtime_error("cant open the path:  " + write_path);    
    
-    DataHeader turn_cdf_header{2, num_buckets, static_cast<uint64_t>(total_turns), sizeof(uint8_t)};
+    DataHeader turn_cdf_header{2, static_cast<uint64_t>(total_turns), num_buckets, sizeof(uint8_t)};
 
     cout << "The turn cdfs header is: " << endl;
     cout << turn_cdf_header.to_string() << endl;

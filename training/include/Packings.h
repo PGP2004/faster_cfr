@@ -53,6 +53,19 @@ struct InfoKey {
 bool operator==(const InfoKey&) const = default;
 };
 
+struct InfoKeyHash{
+    // kinda inspired by hash func used by benq (this one guy whos really smart)
+    const uint64_t C = uint64_t(2e18*(3.14))+71;
+    size_t operator()(const InfoKey& k) const {
+    uint64_t combined = (k.packed_actions.w + 0x9e3779b97f4a7c15ULL)
+                      ^ (uint64_t(k.hand_id) * 0x517cc1b727220a95ULL)
+                      ^ (uint64_t(k.street)  * 0x2545F4914F6CDD1DULL);
+    return __builtin_bswap64(combined * C);
+    }
+
+};
+
+
 //Bobby black magic
 
 struct Abstraction {
@@ -88,19 +101,12 @@ struct Abstraction {
 
     }
 
-    // kinda inspired by hash func used by benq (this one guy whos really smart)
-    const uint64_t C = uint64_t(2e18*(3.14))+71;
-    size_t operator()(const InfoKey& k) const {
-        uint64_t card_cluster;
-
-        if (k.street == 0) card_cluster = preflop_clusters[k.hand_id];
-        else if (k.street == 1) card_cluster = flop_clusters[k.hand_id];
-        else if (k.street == 2) card_cluster = turn_clusters[k.hand_id];
-        else if (k.street == 3) card_cluster = river_clusters[k.hand_id];
-        else throw std::runtime_error("Street does not exist");
-    
-        uint64_t combined = (k.packed_actions.w + 0x9e3779b97f4a7c15ULL) ^ (card_cluster * 0x517cc1b727220a95ULL);
-        return __builtin_bswap64(combined * C);
+    int cluster_of(int street, int hand_id) const {
+        if (street == 0) return preflop_clusters[hand_id];
+        if (street == 1) return flop_clusters[hand_id];
+        if (street == 2) return turn_clusters[hand_id];
+        if (street == 3) return river_clusters[hand_id];
+        throw std::runtime_error("Street does not exist");
     }
 };
 

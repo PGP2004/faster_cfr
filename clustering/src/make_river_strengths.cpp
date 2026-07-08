@@ -23,7 +23,7 @@ int get_strength(std::array<uint8_t, 7>& board) {
 
     array<uint8_t, 7> opp_board;
     for (uint8_t i = 0; i < shared_cards; i++) {
-        opp_board[i] = board[i];
+        opp_board[i] = board[i + 2];
     }
 
     vector<bool> missing(deck_size);

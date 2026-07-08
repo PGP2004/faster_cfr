@@ -30,7 +30,7 @@ class CFR {
         mt19937 rng;
 
         Abstraction game_abs;
-        array<ankerl::unordered_dense::map<InfoKey, shared_ptr<InfoSet>, Abstraction>,2> infoset_dict;
+        array<ankerl::unordered_dense::map<InfoKey, shared_ptr<InfoSet>, InfoKeyHash>,2> infoset_dict;
 
         InfoSet& get_InfoSet(int player, const GameState& state);
 

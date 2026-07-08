@@ -4,6 +4,9 @@
 #include<span>
 #include <cstdint>
 
+namespace l1{
+
+
 struct ClusterBuffer{
     std::vector<std::uint8_t> grouped;
     std::vector<std::uint16_t> assignments;
@@ -38,3 +41,4 @@ std::pair<std::vector<uint8_t>,std::vector<uint16_t>> l1_k_means(const Params& p
 
     //assumes that pts is a flattened list of vectors ie: 
     //[v_0[0], v_0[1],  ... v_0[k], v_1[0], v_1[1], v_1[2] ....]
+}
