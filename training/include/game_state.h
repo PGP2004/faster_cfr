@@ -69,7 +69,6 @@ public:
     void undo_chance(const ChanceUndo& undo);
 
     //below here is boilerplate
-
     inline bool is_terminal_node() const { return street == 8; }
     inline bool is_chance_node() const { return (street%2 == 0) && street != 8; }
 

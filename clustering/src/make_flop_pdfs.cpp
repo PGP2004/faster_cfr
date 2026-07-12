@@ -54,7 +54,7 @@ void write_sparse_flop_pdfs(const string& turn_assignments_path, const string& w
     ofstream out(write_path, ios::binary);
     if (!out) throw runtime_error("cant open the path:  " + write_path);
 
-    DataHeader flop_header{1, total_flops, 47, sizeof(uint16_t)};
+    DataHeader flop_header{total_flops, 47, sizeof(uint16_t)};
     out.write(reinterpret_cast<const char*>(&flop_header), sizeof(flop_header));
 
     array<bool, 52> missing;
@@ -97,10 +97,8 @@ vector<int> get_dist_matrix(const vector<uint8_t>& centers, uint8_t vector_dim, 
             dist_matrix[d_ji_idx] = dist_matrix[d_ij_idx];
         }
     }
-
    return dist_matrix;
 }
-
 
 void write_flop_pdfs_and_dist_matrix(const string& assignments_path, const string& centers_path,
     const string& pdfs_path, const string& dist_matrix_path){
@@ -113,16 +111,16 @@ void write_flop_pdfs_and_dist_matrix(const string& assignments_path, const strin
     uint64_t num_buckets = center_header.num_cols;
 
     vector<int> distance_matrix = get_dist_matrix(centers, num_buckets, num_centers);
-    DataHeader dist_matrix_header{2 , num_centers, num_centers, sizeof(int)};
+    DataHeader dist_matrix_header{num_centers, num_centers, sizeof(int)};
+    
     write_matrix_and_header<int>(dist_matrix_path, dist_matrix_header, distance_matrix);   
-
     write_sparse_flop_pdfs(assignments_path, pdfs_path);
 }
 
 int main(int argc, char** argv) {
     cout << "Started" << endl;
     fs::path exe = fs::weakly_canonical(fs::path(argv[0]));
-    fs::path root = exe.parent_path();                              
+    fs::path root = exe.parent_path().parent_path().parent_path();                
     fs::path storage = root / "storage";
 
     write_flop_pdfs_and_dist_matrix((storage / "turn_assignments").string(),

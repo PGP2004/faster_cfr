@@ -53,20 +53,20 @@ void write_flop_assignment_and_centers(const string& sparse_reps_path, const str
         }
     }
 
-    DataHeader wts_header{1, num_centers, atoms_per_center, sizeof(float)};
+    DataHeader wts_header{num_centers, atoms_per_center, sizeof(float)};
     write_matrix_and_header<float>(ctrs_wts_path, wts_header, wts);
 
-    DataHeader atoms_header{1, num_centers, atoms_per_center, sizeof(uint16_t)};
+    DataHeader atoms_header{num_centers, atoms_per_center, sizeof(uint16_t)};
     write_matrix_and_header<uint16_t>(ctrs_atoms_path, atoms_header, atoms);
     
-    DataHeader assignment_header{1, assignments.size(), 1, sizeof(uint16_t)};
+    DataHeader assignment_header{assignments.size(), 1, sizeof(uint16_t)};
     write_matrix_and_header<uint16_t>(assignment_path, assignment_header, assignments);
 }
 
 int main(int argc, char** argv) {
     cout << "Started" << endl;
     fs::path exe = fs::weakly_canonical(fs::path(argv[0]));
-    fs::path root = exe.parent_path();                              
+    fs::path root = exe.parent_path().parent_path().parent_path();                                   
     fs::path storage = root / "storage";
 
     std::mt19937 rng{42};

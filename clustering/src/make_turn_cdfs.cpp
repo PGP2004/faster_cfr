@@ -7,7 +7,6 @@
 #include <chrono>
 #include <iomanip>
 
-
 namespace fs = std::filesystem;
 using namespace std;
 
@@ -54,7 +53,6 @@ void write_turn_strength_cdf(const string& river_strength_path, const string& wr
         throw runtime_error("write path already exists");
 
     auto [strengths, river_header] = load_matrix_and_header<uint8_t>(river_strength_path);
-    if (river_header.round != 3) throw runtime_error("Reading the wrong round");
 
     array<uint8_t, 2> river_cpr = {2, 5};
     Indexer river_indexer(river_cpr.size(), river_cpr.data()); 
@@ -69,7 +67,7 @@ void write_turn_strength_cdf(const string& river_strength_path, const string& wr
     ofstream out(write_path, ios::binary);
     if (!out) throw runtime_error("cant open the path:  " + write_path);    
    
-    DataHeader turn_cdf_header{2, static_cast<uint64_t>(total_turns), num_buckets, sizeof(uint8_t)};
+    DataHeader turn_cdf_header{static_cast<uint64_t>(total_turns), num_buckets, sizeof(uint8_t)};
 
     cout << "The turn cdfs header is: " << endl;
     cout << turn_cdf_header.to_string() << endl;
@@ -91,7 +89,7 @@ void write_turn_strength_cdf(const string& river_strength_path, const string& wr
 int main(int argc, char** argv) {
     cout << "Started" << endl;
     fs::path exe = fs::weakly_canonical(fs::path(argv[0]));
-    fs::path root = exe.parent_path();                              
+    fs::path root = exe.parent_path().parent_path().parent_path();                           
     fs::path storage = root / "storage";
 
     uint8_t num_buckets = 20;
@@ -101,5 +99,3 @@ int main(int argc, char** argv) {
                             num_buckets);
     cout << "Finished" << endl;
 }
-
-

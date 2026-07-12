@@ -28,6 +28,44 @@ struct Indexer {
 
 
 //TODO: Ensure they match the one used by the indexer
+
+
+static uint8_t parse_rank(char rc) {
+    rc = (char)std::toupper((unsigned char)rc);
+    switch (rc) {
+        case '2': return 0;
+        case '3': return 1;
+        case '4': return 2;
+        case '5': return 3;
+        case '6': return 4;
+        case '7': return 5;
+        case '8': return 6;
+        case '9': return 7;
+        case 'T': return 8;
+        case 'J': return 9;
+        case 'Q': return 10;
+        case 'K': return 11;
+        case 'A': return 12;
+        default: throw std::invalid_argument("Bad rank character");
+    }
+}
+
+static uint8_t parse_suit(char sc) {
+    switch (sc) {
+        case 'c': return 0;
+        case 'd': return 1;
+        case 'h': return 2;
+        case 's': return 3;
+        default: throw std::invalid_argument("Bad suit character");
+    }
+}
+
+static uint8_t string_to_card(char rc, char sc) {
+    uint8_t rank_int = parse_rank(rc);  
+    uint8_t suit_int = parse_suit(sc); 
+    return static_cast<uint8_t>(deck_make_card(suit_int, rank_int));
+}
+
 inline uint8_t card_rank(uint8_t c) noexcept { return (uint8_t)(c / 4); }
 inline uint8_t card_suit(uint8_t c) noexcept { return (uint8_t)(c % 4); }
 

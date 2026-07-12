@@ -9,89 +9,113 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <cmath>
+#include <filesystem>
+#include <fstream>
 
 #include "cfr.h"
 #include "game_state.h"
 #include "info_set.h"
 
-#include <filesystem>
 namespace fs = std::filesystem;
 using namespace std;
 
-static void run_game(int epochs,
-                     int iters_per_epoch, Abstraction abs) {
-                        
-    unique_ptr<GameState> init_state = make_unique<GameState>();
-    CFR solver(12345u, 500000, 200 , std::move(init_state), abs);
 
-    cout << "Did we init the CFR" << endl;
 
-    for (int epoch = 0; epoch < epochs; ++epoch) {
-        solver.train(iters_per_epoch);
-        cout << "Finished epoch " << epoch << endl; 
+unordered_map<string, double> extract_preflop(CFR cfr_run){
+
+    vector<char> suits{'c', 'd'};
+    vector<char> ranks{'A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2'};
+    unordered_map<string, double> output;
+
+    static const array<uint8_t, 1> preflop_counts = {2};
+    static Indexer preflop_indexer(preflop_counts.size(), preflop_counts.data());
+    array<uint8_t,2> hand;
+
+    for (size_t rk_0 = 0; rk_0 < ranks.size(); ++rk_0){
+        for (size_t rk_1  = 0; rk_1 <= rk_0; ++rk_1){
+
+            //same suit case, ranks cant be the same
+            if (rk_0 != rk_1){    
+                card_t c0 = string_to_card(ranks[rk_0], 'c');
+                card_t c1 = string_to_card(ranks[rk_1], 'c');
+
+                hand[0] = c0; hand[1] = c1;
+                int hand_id = static_cast<int>(hand_index_last(&preflop_indexer.h, hand.data()));
+                InfoKey ikey{0, hand_id, {}};
+                double bet_prob = cfr_run.get_action_prob(1, ikey, "pot");
+
+                string s_key{ranks[rk_1], ranks[rk_0]};
+                s_key += 's';  
+                output[s_key] = bet_prob;
+            }
+
+            //offsuit case
+            card_t c0 = string_to_card(ranks[rk_0], 'c');
+            card_t c1 = string_to_card(ranks[rk_1], 'd');
+
+            hand[0] = c0; hand[1] = c1;
+            int hand_id = static_cast<int>(hand_index_last(&preflop_indexer.h, hand.data()));
+
+            InfoKey ikey{0, hand_id, {}};
+            double bet_prob = cfr_run.get_action_prob(1, ikey, "pot");
+
+            string o_key{ranks[rk_1], ranks[rk_0]};
+            o_key += 'o';            
+            output[o_key] = bet_prob;
+        }
     }
+    return output;
 }
 
 
-// static uint8_t parse_rank(char rc) {
-//     rc = (char)std::toupper((unsigned char)rc);
-//     switch (rc) {
-//         case '2': return 0;
-//         case '3': return 1;
-//         case '4': return 2;
-//         case '5': return 3;
-//         case '6': return 4;
-//         case '7': return 5;
-//         case '8': return 6;
-//         case '9': return 7;
-//         case 'T': return 8;
-//         case 'J': return 9;
-//         case 'Q': return 10;
-//         case 'K': return 11;
-//         case 'A': return 12;
-//         default: throw invalid_argument("Bad rank character");
-//     }
-// }
+static  vector<unordered_map<string, double>> run_game(Abstraction abs) {
+                        
+    GameState init_state = GameState();
+    CFR solver(12345u, 500000, 200 , init_state, abs);
 
-// static uint8_t parse_suit(char sc) {
-//     switch (sc) {
-//         case 'c': return 0;
-//         case 'd': return 1;
-//         case 'h': return 2;
-//         case 's': return 3;
-//         default: throw invalid_argument("Bad suit character");
-//     }
-// }
+    vector<int> chk_pts;
 
-// static uint8_t string_to_card(char rc, char sc){
-//     uint8_t suit_int = parse_suit(sc);
-//     uint8_t rank_int = parse_rank(rc);
+    for (int i = 16; i < 22; ++i){
+        chk_pts.push_back(pow(2,i));
+    }
 
-//     return
+    vector<unordered_map<string, double>> chkpt_ranges;
+
+    int last_iter = 0;
+    for (size_t i = 0; i < chk_pts.size(); ++i){
+
+        int target_iter = chk_pts[i];
+        solver.train(target_iter - last_iter, last_iter);
+        cout << "finished training to iter " << target_iter << endl;
+        unordered_map<string,double> preflop_range = extract_preflop(solver);
+        chkpt_ranges.push_back(preflop_range);
+        cout << "extracted preflop range for iter: " << target_iter << endl;
+        cout << "-------------------" << endl;
+        last_iter = target_iter;
+    }
+    return chkpt_ranges;
+}
 
 
-// }
+//Claude written csv saver. TODO: write less sloppy one
+void write_to_csvs(const vector<unordered_map<string, double>>& ckpt_ranges,
+                   const vector<int>& iters, const string& path) {
 
-// unordered_map<string, double> extract_preflop(unique_ptr<GameState> init_state ){
+    std::ofstream out(path);
+    if (!out) { std::cerr << "could not open " << path << "\n"; return; }
 
-//     vector<string> suits{"c", "d"};
-//     vector<string> ranks{"A", "K", "Q", "J", "T", "9", "8", "7", "6", "5", "4", "3", "2"};
-
-//     for (size_t rk_0 = 0; rk_0 < ranks.size(); ++rk_0){
-//         for (size_t rk_1  = rk_0; rk_1 < ranks.size(); ++rk_1){
-
-//             //onsuit: 
-
-//         }
-//     }
-
-//     for (string r
-
-
-
-    
-
-// }
+    out << "iter,hand,pot_prob\n";
+    for (size_t c = 0; c < ckpt_ranges.size(); ++c) {
+        int iter = (c < iters.size()) ? iters[c] : static_cast<int>(c);
+        for (const auto& [hand, prob] : ckpt_ranges[c]) {
+            out << iter << "," << hand << ",";
+            if (prob < 0.0) out << "";        // failed lookup -> NaN in pandas
+            else            out << prob;
+            out << "\n";
+        }
+    }
+}
 
 int main(int argc, char** argv) {
     try {
@@ -99,7 +123,8 @@ int main(int argc, char** argv) {
 
         cout << "Started" << endl;
         fs::path exe = fs::weakly_canonical(fs::path(argv[0]));
-        fs::path root = exe.parent_path().parent_path();
+        fs::path root = exe.parent_path().parent_path().parent_path().parent_path();
+        cout << "The root is: " << root.string() << endl;
         fs::path storage = root / "clustering/storage";
 
         string flop_path = (storage / "flop_assignments").string();
@@ -114,13 +139,19 @@ int main(int argc, char** argv) {
         int iters_per_epoch = 1000;
 
         auto t0 = clock::now();
-
-        run_game(epochs, iters_per_epoch, abs);
+        vector<unordered_map<string, double>> ckpt_ranges = run_game(abs);
         auto t1 = clock::now();
-
         double seconds = std::chrono::duration<double>(t1 - t0).count();
-        cout << "Number of traverses: " << epochs * iters_per_epoch;
         cout << fixed << setprecision(6) << "Elapsed: " << seconds << " seconds\n";
+
+
+        vector<int> ckpt_iters;
+        for (int i = 16; i < 22; ++i){
+            ckpt_iters.push_back(pow(2,i));
+        }
+
+
+        write_to_csvs(ckpt_ranges, ckpt_iters, "preflop_checkpoints.csv");
 
     } 
         catch (const exception& e) {

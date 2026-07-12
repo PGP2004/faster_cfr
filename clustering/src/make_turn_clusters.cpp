@@ -29,8 +29,8 @@ void write_assignment_and_centers(const string& center_write_path, const string&
         
     cout << "Finished L1 k means" << endl;
 
-    DataHeader center_header{2, num_centers, num_buckets, 1};
-    DataHeader assignment_header{2, assignments.size(), 1, 2};
+    DataHeader center_header{num_centers, num_buckets, 1};
+    DataHeader assignment_header{assignments.size(), 1, 2};
 
     write_matrix_and_header<uint8_t>(center_write_path, center_header, centers);
     write_matrix_and_header<uint16_t>(assignment_write_path, assignment_header, assignments);
@@ -41,7 +41,7 @@ void write_assignment_and_centers(const string& center_write_path, const string&
 int main(int argc, char** argv) {
     cout << "Started" << endl;
     fs::path exe = fs::weakly_canonical(fs::path(argv[0]));
-    fs::path root = exe.parent_path();                              
+    fs::path root = exe.parent_path().parent_path().parent_path();                       
     fs::path storage = root / "storage";
 
     uint8_t num_clusters = 50;

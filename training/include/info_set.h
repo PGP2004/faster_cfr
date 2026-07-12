@@ -17,7 +17,6 @@ protected:
     //the fuck is this: abstract and concrete representatino of legal actions
     //at some point switch to not needing strings
     std::vector<std::pair<std::string, Action>> abs_and_concrete;
-
     std::vector<double> regret_sum; 
     std::vector<double> strategy_sum; 
     int last_t = 0;
@@ -38,7 +37,7 @@ public:
 
     std::pair<Action, double> sample_regret_action(std::mt19937& rng, std::vector<double>& probabilities) const;
    
-    void get_action_w_probs(vector<pair<Action, double>>&   actions_out, std::vector<double>& probs_out) const;
+    void get_action_w_probs(std::vector<Action>&   actions_out, std::vector<double>& probs_out) const;
     void update_last_t(int t);
 
     std::unordered_map<string, double> get_average_strategy() const;

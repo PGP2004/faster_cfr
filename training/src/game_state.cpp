@@ -22,7 +22,6 @@ extern "C" {
 #undef _Bool
 }
 
-
 double get_p1_winshare(const array<array<uint8_t, 7>, 2> hands){
     uint8_t r0[7], s0[7];
     uint8_t r1[7], s1[7];
@@ -265,7 +264,6 @@ void GameState::undo_chance(const ChanceUndo& undo) {
         hand_ids[1].fill(-1);
         p1_win_share = -1;
     }
-    
 
     pips = undo.old_pips;
     stacks = undo.old_stacks;

@@ -26,7 +26,7 @@ class CFR {
 
     private:
 
-        unique_ptr<GameState> init_state;
+        GameState init_state;
         mt19937 rng;
 
         Abstraction game_abs;
@@ -34,12 +34,12 @@ class CFR {
 
         InfoSet& get_InfoSet(int player, const GameState& state);
 
-        double traverse(int player, GameState& state, double pi_i, int t);
+        double traverse(int player, GameState& state, int t);
 
     public:
         
-        CFR(uint32_t seed, int infoset_prealloc, int vectorpool_prealloc, unique_ptr<GameState> init_game_state, Abstraction game_abs);
-
-        void train(int num_iterations);
+        CFR(uint32_t seed, int infoset_prealloc, int vectorpool_prealloc, GameState init_game_state, Abstraction game_abs);
+        void train(int num_iterations, int starting_iter);
+        double get_action_prob(int player, InfoKey info_key, string action_name);
 
     };

@@ -332,6 +332,3 @@ namespace emd{
         return {std::move(centers), std::move(c_buff.assignments)};
     }
 }
-
-
-

@@ -54,7 +54,8 @@ void InfoSet::update_regret(const vector<double>& action_deltas, int t) {
     }
 
     for (size_t i = 0; i < regret_sum.size(); i++) {
-        regret_sum[i] += double(t) * action_deltas[i];  
+        //regret_sum[i] += double(t) * action_deltas[i];  
+        regret_sum[i] += action_deltas[i];  
     }
 }
 
@@ -88,7 +89,8 @@ void InfoSet::update_average_strategy(double reach_prob, vector<double>& cur_str
     if (cur_strat.size() != strategy_sum.size()) throw logic_error("size mismatch");
 
     for (size_t i = 0; i < cur_strat.size(); i++) {
-        strategy_sum[i] += double(t) * reach_prob * cur_strat[i];
+        // strategy_sum[i] += double(t) * reach_prob * cur_strat[i];
+        strategy_sum[i] +=  reach_prob * cur_strat[i];
     }
 }
 
@@ -135,17 +137,11 @@ void InfoSet::update_last_t(int t){
     last_t = t;
 }
 
-void InfoSet::get_action_w_probs(vector<pair<Action, double>>& actions_out, vector<double>& probs_out) const {
-    
+void InfoSet::get_action_w_probs(vector<Action>& actions_out, vector<double>& probs_out) const {
     size_t n = regret_sum.size();
+    get_regret_strategy(probs_out);      
     
-    probs_out.resize(n);
     actions_out.resize(n);
-
-    get_regret_strategy(probs_out);
-    actions_out.resize(n);
-
-    for (size_t i = 0; i < n; i++) {
-        actions_out[i] = {abs_and_concrete[i].second, probs_out[i]};
-    }
+    for (size_t i = 0; i < n; i++)
+        actions_out[i] = abs_and_concrete[i].second;
 }

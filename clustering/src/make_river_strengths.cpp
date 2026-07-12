@@ -66,7 +66,7 @@ void write_strengths(const string& write_path) {
     
     if (!out) throw runtime_error("cant open the write path");
 
-    DataHeader header{3, static_cast<uint64_t>(total), 1 , sizeof(uint8_t)};
+    DataHeader header{static_cast<uint64_t>(total), 1 , sizeof(uint8_t)};
     out.write(reinterpret_cast<const char*>(&header), sizeof(header));
 
     array<uint8_t, 7> cards;
@@ -78,11 +78,10 @@ void write_strengths(const string& write_path) {
     }
 }
 
-
 int main(int argc, char** argv) { 
     cout << "Started" << endl;
     fs::path exe = fs::weakly_canonical(fs::path(argv[0]));
-    fs::path root = exe.parent_path(); 
+    fs::path root = exe.parent_path().parent_path().parent_path();         
     fs::path storage = root / "storage";
 
     write_strengths((storage / "river_strengths").string());

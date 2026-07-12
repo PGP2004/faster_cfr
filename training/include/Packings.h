@@ -55,6 +55,7 @@ bool operator==(const InfoKey&) const = default;
 
 struct InfoKeyHash{
     // kinda inspired by hash func used by benq (this one guy whos really smart)
+    //Bobby black magic
     const uint64_t C = uint64_t(2e18*(3.14))+71;
     size_t operator()(const InfoKey& k) const {
     uint64_t combined = (k.packed_actions.w + 0x9e3779b97f4a7c15ULL)
@@ -66,8 +67,6 @@ struct InfoKeyHash{
 };
 
 
-//Bobby black magic
-
 struct Abstraction {
     
     std::vector<uint8_t> preflop_clusters;
@@ -75,7 +74,7 @@ struct Abstraction {
     std::vector<uint16_t> turn_clusters;
     std::vector<uint8_t> river_clusters;
 
-    Abstraction() = default;  // keep default-constructible
+    Abstraction() = default; 
 
     Abstraction(const std::string& flop_path,
                 const std::string& turn_path,
@@ -84,9 +83,11 @@ struct Abstraction {
     }
 
     void set_clusters(const std::string& flop_path, const std::string&turn_path, const std::string& river_path){
-        preflop_clusters.resize(169);
 
-        for (size_t i = 0; i < 169; ++i){
+        size_t num_preflops = 169;
+        preflop_clusters.resize(num_preflops);
+
+        for (size_t i = 0; i < num_preflops; ++i){
             preflop_clusters[i] = static_cast<int>(i);
         }
 

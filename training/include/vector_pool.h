@@ -11,7 +11,7 @@ using std::stack;
 class VectorPool {
 private:
 
-    static stack<vector<pair<Action, double>>*> action_pool;
+    static stack<vector<Action>*> action_pool;
     static stack<vector<double>*> delta_pool;
     static stack<vector<double>*> probs_pool;
     static stack<ChanceUndo*> chance_undo_pool;
@@ -20,7 +20,7 @@ private:
 public:
    
     struct ActionBuffer {
-        vector<pair<Action, double>>* buf;
+        vector<Action>* buf;
         ActionBuffer() {
             if (VectorPool::action_pool.empty()) {
                 throw std::logic_error("ran outa actions");
@@ -38,7 +38,7 @@ public:
         }
 
         ActionBuffer& operator=(const ActionBuffer&) = delete;
-        vector<pair<Action, double>>& get() { return *buf; }
+        vector<Action>& get() { return *buf; }
     };
 
     struct DeltaBuffer {
@@ -88,7 +88,7 @@ public:
 
     static void preallocate(size_t count = 100) {
         for (size_t i = 0; i < count; i++) {
-            auto* action_buf = new vector<pair<Action, double>>();
+            auto* action_buf = new vector<Action>();
             action_buf->reserve(6);
             action_pool.push(action_buf);
 

@@ -13,7 +13,7 @@ ISO_LIB  := $(ISO_DIR)/libhand_index.a
 CXXFLAGS += -I$(ISO_INC)
 CXXFLAGS += -MMD -MP
 
-PROGRAMS := make_river_strengths make_turn_cdfs make_turn_clusters make_flop_pdfs make_flop_clusters
+PROGRAMS := make_flop_ev_sdev make_river_strengths make_turn_cdfs make_turn_clusters make_flop_pdfs make_flop_clusters
 PROGRAM_BINS := $(addprefix $(BIN_DIR)/,$(PROGRAMS))
 PROGRAM_SRCS := $(addsuffix .cpp,$(addprefix $(SRC_DIR)/,$(PROGRAMS)))
 ALL_SRCS     := $(wildcard $(SRC_DIR)/*.cpp)

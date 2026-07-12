@@ -5,6 +5,7 @@
 #include <fstream>
 #include <span>
 #include <iostream>
+#include <filesystem>
 
 extern "C" {
 #define _Bool bool
@@ -38,15 +39,13 @@ inline int L1_dist(std::span<const uint8_t> a, std::span<const uint8_t> b){
 }
 
 struct DataHeader{
-    uint64_t round; //0 =preflop , 1 = flop, 2 = turn, 3 = river
     uint64_t num_rows;
     uint64_t num_cols;
     uint64_t bytes_per_elt;
     bool operator==(const DataHeader&) const = default;
 
     std::string to_string() const {
-        return "DataHeader{round=" + std::to_string(round) + 
-        + ", num_rows=" + std::to_string(num_rows)
+        return "DataHeader{ num_rows=" + std::to_string(num_rows)
         + ", num_cols=" + std::to_string(num_cols)
         + ", bytes_per_elt=" + std::to_string(bytes_per_elt) + "}";
     }
@@ -83,6 +82,8 @@ std::pair<std::vector<T>, DataHeader> load_matrix_and_header(const std::string& 
 
 template <typename T>
 inline void write_matrix_and_header(const std::string& write_path, DataHeader header, const std::vector<T>& results) {
+
+    if (std::filesystem::exists(write_path)) throw std::runtime_error("write path already exists");
 
     if (header.bytes_per_elt != sizeof(T)) throw std::runtime_error("The header bytes per elt does not match the actual size");
     if (header.num_rows * header.num_cols != results.size())
