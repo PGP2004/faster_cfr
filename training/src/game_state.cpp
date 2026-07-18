@@ -1,5 +1,4 @@
 #include "utils.h"
-#include "packings.h"
 #include "game_state.h"
 
 #include <algorithm>
@@ -21,7 +20,6 @@ extern "C" {
 #include "hand_index.h"
 #undef _Bool
 }
-
 double get_p1_winshare(const array<array<uint8_t, 7>, 2> hands){
     uint8_t r0[7], s0[7];
     uint8_t r1[7], s1[7];
@@ -91,7 +89,7 @@ static double deal_and_get_winshare(mt19937& rng, array<array<int, 4>, 2>& hand_
 
 GameState::GameState(): hand_ids{}, stacks{starting_stack, starting_stack}, 
 pips{0,0}, p1_win_share(-1), pot(0), street(0), active_player(0), 
-last_action{-1,-1}, packed_actions{} {
+last_action{-1,-1}{
     hand_ids[0].fill(-1);
     hand_ids[1].fill(-1);
 }
@@ -168,9 +166,6 @@ void GameState::apply_action(const Action& action) {
 
     if (is_chance_node() || is_terminal_node()){ throw logic_error("cant call action on chance or terminal");}
 
-    int abs_id = abs_id_from_action(action);
-    packed_actions.push(abs_id);
-      
     int to_pay = 0;
     if (action.type == 2) to_pay = pips[1 - active_player] - pips[active_player];
     else if (action.type == 3) to_pay = action.amt - pips[active_player];
@@ -208,8 +203,6 @@ void GameState::undo_action(const ActionUndo& undo) {
     pips[active_player] += -to_pay; 
     pot += -to_pay;
     stacks[active_player] += to_pay;
-
-    packed_actions.del();
 }
 
 

@@ -6,10 +6,11 @@
 #include <vector>
 #include <array>
 #include <memory>
+#include <unordered_map>
 
 #include "game_state.h"
-#include "info_set.h"
-#include "packings.h"
+#include "info_sets.h"
+
 #include "ankerl/unordered_dense.h"
 
 using std::mt19937;
@@ -25,21 +26,19 @@ using std::shared_ptr;
 class CFR {
 
     private:
-
-        GameState init_state;
+        GameState state;
+        Abstraction abs;
+        ActionTree action_tree;
         mt19937 rng;
 
-        Abstraction game_abs;
-        array<ankerl::unordered_dense::map<InfoKey, shared_ptr<InfoSet>, InfoKeyHash>,2> infoset_dict;
-
-        InfoSet& get_InfoSet(int player, const GameState& state);
-
-        double traverse(int player, GameState& state, int t);
+        InfoSets infosets;
+        InfoKey get_InfoKey(const GameState& state, const ActionTree& at);
+        double traverse(int player, GameState& state, ActionTree& at, int t);
 
     public:
-        
-        CFR(uint32_t seed, int infoset_prealloc, int vectorpool_prealloc, GameState init_game_state, Abstraction game_abs);
+
+        CFR(GameState init_game_state, Abstraction& abstraction, ActionTree& action_tree);
         void train(int num_iterations, int starting_iter);
-        double get_action_prob(int player, InfoKey info_key, string action_name);
+        double get_action_prob(int player, InfoKey info_key, Action action);
 
     };

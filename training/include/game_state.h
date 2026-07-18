@@ -1,7 +1,5 @@
 #pragma once
-
 #include "utils.h"
-#include "packings.h"
 
 #include <array>
 #include <cstdint>
@@ -46,10 +44,7 @@ private:
     int street;
     int active_player;
     Action last_action;
-
-    PackedActions packed_actions;
     int abs_id_from_action(const Action& a) const;
-
 
 public:
 
@@ -69,21 +64,19 @@ public:
     void undo_chance(const ChanceUndo& undo);
 
     //below here is boilerplate
+
+    inline size_t get_street() const { return street/2; }
     inline bool is_terminal_node() const { return street == 8; }
     inline bool is_chance_node() const { return (street%2 == 0) && street != 8; }
 
     inline int get_active_player() const { return active_player; }
     inline int get_pot() const { return pot; }
 
+    inline int get_hand_id() const {return hand_ids[active_player][street/2]; }
+
     inline int get_pip(int player) const {
         if (player != 0 && player != 1) throw logic_error("The player index must be one of 1 or 0");
         return pips[player];
-    }
-
-    //TODO: move this over to the abstraction class
-    inline InfoKey get_ID(int player) const {
-        if (player != 0 && player != 1) throw logic_error("The player index must be one of 1 or 0");
-        return InfoKey{street/2, hand_ids[player][street/2], packed_actions};
     }
 
 };

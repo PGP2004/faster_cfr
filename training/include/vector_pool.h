@@ -11,36 +11,11 @@ using std::stack;
 class VectorPool {
 private:
 
-    static stack<vector<Action>*> action_pool;
     static stack<vector<double>*> delta_pool;
     static stack<vector<double>*> probs_pool;
-    static stack<ChanceUndo*> chance_undo_pool;
-    static stack<ActionUndo*> action_undo_pool;
 
 public:
    
-    struct ActionBuffer {
-        vector<Action>* buf;
-        ActionBuffer() {
-            if (VectorPool::action_pool.empty()) {
-                throw std::logic_error("ran outa actions");
-            } else {
-                buf = VectorPool::action_pool.top();
-                VectorPool::action_pool.pop();
-            }
-            buf->clear();
-        }
-
-        ~ActionBuffer() {
-            if (buf) {
-                VectorPool::action_pool.push(buf);
-            }
-        }
-
-        ActionBuffer& operator=(const ActionBuffer&) = delete;
-        vector<Action>& get() { return *buf; }
-    };
-
     struct DeltaBuffer {
         vector<double>* buf;
         DeltaBuffer() {
@@ -86,19 +61,18 @@ public:
         vector<double>& get() { return *buf; }
     };
 
-    static void preallocate(size_t count = 100) {
-        for (size_t i = 0; i < count; i++) {
-            auto* action_buf = new vector<Action>();
-            action_buf->reserve(6);
-            action_pool.push(action_buf);
 
+      static void preallocate(size_t vector_size, size_t count = 100) {
+        for (size_t i = 0; i < count; i++) {
+           
             auto* delta_buf = new vector<double>();
-            delta_buf->reserve(6);
+            delta_buf->reserve(vector_size);
             delta_pool.push(delta_buf);
 
             auto* probs_buf = new vector<double>();
-            probs_buf->reserve(6);
+            probs_buf->reserve(vector_size);
             probs_pool.push(probs_buf);
         }
     }
+
 };
