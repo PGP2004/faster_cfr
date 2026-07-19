@@ -7,7 +7,7 @@
 
 using namespace std;
 
-InfoSets::InfoSets(const ActionTree& action_tree, const Abstraction& abstraction) {
+InfoSets::InfoSets(const ActionTree& action_tree, const vector<size_t> cluster_counts) {
 
     vector<size_t> cluster_counts(4,0);
     cluster_counts[0] = abstraction.preflop_clusters.size();
@@ -15,7 +15,8 @@ InfoSets::InfoSets(const ActionTree& action_tree, const Abstraction& abstraction
     cluster_counts[2] = abstraction.turn_clusters.size();
     cluster_counts[3] = abstraction.river_clusters.size();
 
-    int total = 0;
+    size_t cum_total = 0;
+
 
     for (ActionNode node : action_tree.nodes){
 
@@ -23,16 +24,12 @@ InfoSets::InfoSets(const ActionTree& action_tree, const Abstraction& abstraction
         size_t num_actions = node.edges.size();
         size_t num_clusters = cluster_counts[st];
 
-        for (size_t c = 0; c < num_clusters; ++ c){
-            size_t offset = offsets[offsets.size()-1] + num_actions;
-            offsets.push_back(offset);
-        }
-
-        total += num_actions*num_clusters;
+        offsets.push_bacK(cum_total);
+        cum_total += num_actions*num_clusters;
     }
 
-    regret_sum.assign(total, 0.0);
-    strategy_sum.assign(total, 0.0);
+    regret_sum.assign(cum_total, 0.0);
+    strategy_sum.assign(cum_total, 0.0);
 }
 
 
@@ -55,7 +52,7 @@ void InfoSets::update_strategy(const InfoKey& ikey , vector<double>& cur_strat) 
     size_t offset = get_offset(ikey);
     size_t n = ikey.get_num_actions();
 
-    if (n != strategy_sum.size()) throw logic_error("size mismatch");
+    if (n != cur_strat.size()) throw logic_error("size mismatch");
 
     for (size_t i = 0; i < n; i++) {
         strategy_sum[offset+i] += cur_strat[i];
@@ -113,15 +110,12 @@ vector<pair<Action, double>> InfoSets::get_average_strategy(const InfoKey& ikey)
         sum += strategy_sum[offset+i];
     }
 
-    if (sum <= 0.0) {
+    if (sum <= 0.0){
         double p = 1.0/double(n); 
-        for (size_t i = 0; i < n; ++i){
-            output[i] = {ikey.node.edges[i], p};
-        }
+        for (size_t i = 0; i < n; ++i) output[i] = {ikey.node.edges[i], p};
     }
-
-    for (size_t i = 0; i < n; ++i) {
-        output[i] = {ikey.node.edges[i], strategy_sum[i] / sum};
+    else {
+        for (size_t i = 0; i < n; ++i) output[i] = {ikey.node.edges[i], strategy_sum[i] / sum};
     }
 
     return output;

@@ -154,14 +154,6 @@ void GameState::write_action_undo(const Action& action, ActionUndo& undo) const 
     undo.old_active_player = active_player;
 }
 
-
-int GameState::abs_id_from_action(const Action& a) const{
-    if (a.type < 3) return a.type ;
-    int inc = a.amt - pips[active_player];  
-    if (inc == pot) return 3;
-    throw logic_error("Raise amount not in abstraction");
-}
-
 void GameState::apply_action(const Action& action) {
 
     if (is_chance_node() || is_terminal_node()){ throw logic_error("cant call action on chance or terminal");}

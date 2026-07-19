@@ -44,7 +44,6 @@ private:
     int street;
     int active_player;
     Action last_action;
-    int abs_id_from_action(const Action& a) const;
 
 public:
 

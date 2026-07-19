@@ -39,12 +39,12 @@ private:
     std::vector<double> strategy_sum; 
 
     inline size_t get_offset(const InfoKey& ikey)  const{
-        return offsets[ikey.node.node_idx + ikey.cluster_idx];
+        return offsets[ikey.node.node_idx] + ikey.cluster_idx*ikey.get_num_actions();
     }
 
 public:
 
-    explicit InfoSets(const ActionTree& action_tree, const Abstraction& abstraction);
+    explicit InfoSets(const ActionTree& action_tree, const vector<size_t> cluster_counts);
 
     void update_regret(const InfoKey& ikey, const std::vector<double>& action_deltas);
 
