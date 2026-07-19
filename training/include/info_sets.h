@@ -11,7 +11,7 @@
 #include <random>
 
 struct InfoKey {
-    ActionNode node;
+    ActionNode& node;
     size_t cluster_idx;
 
     inline size_t get_num_actions() const{

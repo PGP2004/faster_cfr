@@ -9,14 +9,7 @@ using namespace std;
 
 InfoSets::InfoSets(const ActionTree& action_tree, const vector<size_t> cluster_counts) {
 
-    vector<size_t> cluster_counts(4,0);
-    cluster_counts[0] = abstraction.preflop_clusters.size();
-    cluster_counts[1] = abstraction.flop_clusters.size();
-    cluster_counts[2] = abstraction.turn_clusters.size();
-    cluster_counts[3] = abstraction.river_clusters.size();
-
     size_t cum_total = 0;
-
 
     for (ActionNode node : action_tree.nodes){
 
@@ -24,7 +17,7 @@ InfoSets::InfoSets(const ActionTree& action_tree, const vector<size_t> cluster_c
         size_t num_actions = node.edges.size();
         size_t num_clusters = cluster_counts[st];
 
-        offsets.push_bacK(cum_total);
+        offsets.push_back(cum_total);
         cum_total += num_actions*num_clusters;
     }
 

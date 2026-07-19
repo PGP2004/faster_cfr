@@ -13,8 +13,8 @@
 
 using namespace std;
 
-CFR::CFR(GameState init_state,Abstraction& abstraction, ActionTree& action_tree): state(std::move(init_state)),
-    abs(abstraction), action_tree(action_tree), infosets(action_tree, abstraction) {
+CFR::CFR(GameState init_state, Abstraction& abstraction, ActionTree& action_tree): state(std::move(init_state)),
+    abs(abstraction), action_tree(action_tree), infosets(action_tree, abstraction.cluster_sizes) {
     //TODO: make the params herre knobs
     VectorPool::preallocate(4, 200);
 }

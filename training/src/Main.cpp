@@ -42,13 +42,11 @@ int main(int argc, char** argv) {
         CFR cfr(init_state, abs, at);
 
         int iters = 100000;
-
         auto t0 = clock::now();
         cfr.train(iters, 0);
         double total = std::chrono::duration<double>(clock::now() - t0).count();
-        cout << "Runtime for " << iters << " iterations is: " << total << " seconds" << endl;
-
     }
+    
     catch (const exception& e) {
         cerr << "Error: " << e.what() << "\n";
         return 1;

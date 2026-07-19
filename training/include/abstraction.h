@@ -8,7 +8,10 @@
 
 //TODO: Add the clustering results to the infokey // and j rework this class hella
 
-
+template <class T>
+static size_t count_clusters(const std::vector<T>& assign) {
+    return std::ranges::max(assign) + size_t{1};
+}
 
 struct Abstraction {
     
@@ -16,6 +19,7 @@ struct Abstraction {
     std::vector<uint16_t> flop_clusters;
     std::vector<uint16_t> turn_clusters;
     std::vector<uint8_t> river_clusters;
+    std::vector<size_t> cluster_sizes;
 
     Abstraction() = default; 
 
@@ -29,12 +33,13 @@ struct Abstraction {
 
         size_t num_preflops = 169;
         preflop_clusters.resize(num_preflops);
-
+    
         for (size_t i = 0; i < num_preflops; ++i){
             preflop_clusters[i] = static_cast<int>(i);
         }
 
         auto [fc, flop_header] = load_matrix_and_header<uint16_t>(flop_path);
+
         flop_clusters = std::move(fc);
 
         auto[tc, turn_header] = load_matrix_and_header<uint16_t>(turn_path);
@@ -43,6 +48,10 @@ struct Abstraction {
         auto [rc, river_header] = load_matrix_and_header<uint8_t>(river_path);
         river_clusters = std::move(rc);
 
+        cluster_sizes.push_back(preflop_clusters.size());   
+        cluster_sizes.push_back(count_clusters(flop_clusters));
+        cluster_sizes.push_back(count_clusters(turn_clusters));
+        cluster_sizes.push_back(count_clusters(river_clusters));
     }
 
     int cluster_of(int street, int hand_id) const {

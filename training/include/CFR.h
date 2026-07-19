@@ -11,8 +11,6 @@
 #include "game_state.h"
 #include "info_sets.h"
 
-#include "ankerl/unordered_dense.h"
-
 using std::mt19937;
 using std::string;
 using std::vector;
